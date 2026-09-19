@@ -1,6 +1,7 @@
 import axios from "axios";
 import authToken from "../utils/authToken";
 import jwt_decode from "jwt-decode";
+
 import {
   SET_FACULTY,
   SET_ERRORS,
@@ -29,112 +30,245 @@ const subjectCodeListHelper = (data) => {
   };
 };
 
-export const facultyLogin = (credentials) => {
+/* =========================================================
+   FACULTY REGISTRATION
+========================================================= */
+export const facultyRegister = (
+  facultyData
+) => {
+  return async () => {
+    try {
+      const response = await axios.post(
+        "/api/faculty/register",
+        facultyData
+      );
+
+      return response.data;
+    } catch (err) {
+      console.error(
+        "Faculty registration error:",
+        err.response?.data ||
+          err.message
+      );
+
+      throw err;
+    }
+  };
+};
+
+/* =========================================================
+   FACULTY LOGIN
+========================================================= */
+export const facultyLogin = (
+  credentials
+) => {
   return async (dispatch) => {
     try {
-      const { data } = await axios.post("/api/faculty/login", credentials);
+      const { data } =
+        await axios.post(
+          "/api/faculty/login",
+          credentials
+        );
+
       const { token } = data;
 
-      localStorage.setItem("facultyToken", token);
+      localStorage.setItem(
+        "facultyToken",
+        token
+      );
+
       authToken(token);
 
-      const decoded = jwt_decode(token);
-      dispatch(setFaculty(decoded));
+      const decoded =
+        jwt_decode(token);
+
+      dispatch(
+        setFaculty(decoded)
+      );
     } catch (err) {
       dispatch({
         type: SET_ERRORS,
-        payload: err.response.data,
+        payload:
+          err.response?.data || {
+            message:
+              "Faculty login failed",
+          },
       });
     }
   };
 };
 
-export const facultyUpdatePassword = (passwordData) => {
+/* =========================================================
+   UPDATE PASSWORD
+========================================================= */
+export const facultyUpdatePassword = (
+  passwordData
+) => {
   return async (dispatch) => {
     try {
-      const { data } = await axios.post(
+      await axios.post(
         "/api/faculty/updatePassword",
         passwordData
       );
-      alert("Password Updated Successfully");
+
+      alert(
+        "Password Updated Successfully"
+      );
     } catch (err) {
       dispatch({
         type: SET_ERRORS,
-        payload: err.response.data,
+        payload:
+          err.response?.data || {
+            message:
+              "Password update failed",
+          },
       });
     }
   };
 };
 
-export const getOTPFaculty = (email) => {
+/* =========================================================
+   GET OTP
+========================================================= */
+export const getOTPFaculty = (
+  email
+) => {
   return async (dispatch) => {
     try {
-      await axios.post("/api/faculty/forgotPassword", email);
-      alert("OTP sent to your email");
-      dispatch({ type: SET_FLAG });
+      await axios.post(
+        "/api/faculty/forgotPassword",
+        email
+      );
+
+      alert(
+        "OTP sent to your email"
+      );
+
+      dispatch({
+        type: SET_FLAG,
+      });
     } catch (err) {
       dispatch({
         type: SET_ERRORS,
-        payload: err.response.data,
+        payload:
+          err.response?.data || {
+            message:
+              "Unable to send OTP",
+          },
       });
     }
   };
 };
 
-export const submitOTPFaculty = (credentials) => {
+/* =========================================================
+   SUBMIT OTP
+========================================================= */
+export const submitOTPFaculty = (
+  credentials
+) => {
   return async (dispatch) => {
     try {
-      const { data } = await axios.post("/api/faculty/postOTP", credentials);
-      alert("Password Updated, kindly login with updated password");
+      await axios.post(
+        "/api/faculty/postOTP",
+        credentials
+      );
+
+      alert(
+        "Password Updated, kindly login with updated password"
+      );
     } catch (err) {
       dispatch({
         type: SET_ERRORS,
-        payload: err.response.data,
+        payload:
+          err.response?.data || {
+            message:
+              "OTP submission failed",
+          },
       });
     }
   };
 };
 
-export const fetchStudents = (department, year, section) => {
+/* =========================================================
+   FETCH STUDENTS
+========================================================= */
+export const fetchStudents = (
+  department,
+  year,
+  section
+) => {
   return async (dispatch) => {
     try {
-      const { data } = await axios.post("/api/faculty/fetchStudents", {
-        department,
-        year,
-        section,
-      });
-      dispatch(fetchStudentsHelper(data.result));
-      dispatch(subjectCodeListHelper(data.subjectCode));
+      const { data } =
+        await axios.post(
+          "/api/faculty/fetchStudents",
+          {
+            department,
+            year,
+            section,
+          }
+        );
+
+      dispatch(
+        fetchStudentsHelper(
+          data.result
+        )
+      );
+
+      dispatch(
+        subjectCodeListHelper(
+          data.subjectCode
+        )
+      );
     } catch (err) {
       dispatch({
         type: SET_ERRORS,
-        payload: err.response.data,
+        payload:
+          err.response?.data || {
+            message:
+              "Unable to fetch students",
+          },
       });
     }
   };
 };
 
-const facultyUpdateProfileFlag = (data) => {
+/* =========================================================
+   UPDATE PROFILE
+========================================================= */
+const facultyUpdateProfileFlag = (
+  data
+) => {
   return {
     type: "FACULTY_UPDATE_PROFILE_FLAG",
     payload: data,
   };
 };
 
-export const facultyUpdate = (updatedData) => {
+export const facultyUpdate = (
+  updatedData
+) => {
   return async (dispatch) => {
     try {
-      const { data } = await axios.put(
+      await axios.put(
         "/api/faculty/updateProfile",
         updatedData
       );
-      dispatch(facultyUpdateProfileFlag(true));
+
+      dispatch(
+        facultyUpdateProfileFlag(true)
+      );
     } catch (err) {
-      alert.error("Error in updating faculty");
+      alert.error(
+        "Error in updating faculty"
+      );
     }
   };
 };
 
+/* =========================================================
+   MARK ATTENDANCE
+========================================================= */
 export const markAttendance = (
   selectedStudents,
   subjectCode,
@@ -144,14 +278,17 @@ export const markAttendance = (
 ) => {
   return async (dispatch) => {
     try {
-      await axios.post("/api/faculty/markAttendance", {
-        selectedStudents,
-        subjectCode,
-        department,
-        year,
-        section,
-      });
-      //alert("Attendance has been marked successfully");
+      await axios.post(
+        "/api/faculty/markAttendance",
+        {
+          selectedStudents,
+          subjectCode,
+          department,
+          year,
+          section,
+        }
+      );
+
       dispatch({
         type: "HELPER",
         payload: true,
@@ -162,6 +299,9 @@ export const markAttendance = (
   };
 };
 
+/* =========================================================
+   UPLOAD MARKS
+========================================================= */
 export const uploadMarks = (
   subjectCode,
   exam,
@@ -173,16 +313,19 @@ export const uploadMarks = (
 ) => {
   return async (dispatch) => {
     try {
-      await axios.post("/api/faculty/uploadMarks", {
-        subjectCode,
-        exam,
-        totalMarks,
-        marks,
-        department,
-        year,
-        section,
-      });
-      // alert("Marks uploaded successfully");
+      await axios.post(
+        "/api/faculty/uploadMarks",
+        {
+          subjectCode,
+          exam,
+          totalMarks,
+          marks,
+          department,
+          year,
+          section,
+        }
+      );
+
       dispatch({
         type: "HELPER",
         payload: true,
@@ -190,24 +333,41 @@ export const uploadMarks = (
     } catch (err) {
       dispatch({
         type: SET_ERRORS_HELPER,
-        payload: err.response.data,
+        payload:
+          err.response?.data || {
+            message:
+              "Unable to upload marks",
+          },
       });
     }
   };
 };
 
-export const setFacultyUser = (data) => {
+/* =========================================================
+   SET FACULTY USER
+========================================================= */
+export const setFacultyUser = (
+  data
+) => {
   return {
     type: SET_FACULTY,
     payload: data,
   };
 };
 
-export const facultyLogout = () => (dispatch) => {
-  // Remove token from localStorage
-  localStorage.removeItem("facultyToken");
-  // Remove auth header for future requests
+/* =========================================================
+   LOGOUT
+========================================================= */
+export const facultyLogout = () => (
+  dispatch
+) => {
+  localStorage.removeItem(
+    "facultyToken"
+  );
+
   authToken(false);
-  // Set current user to {} which will set isAuthenticated to false
-  dispatch(setFaculty({}));
+
+  dispatch(
+    setFaculty({})
+  );
 };

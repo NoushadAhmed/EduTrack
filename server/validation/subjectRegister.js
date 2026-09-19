@@ -1,5 +1,6 @@
 const Validator = require("validator");
 const isEmpty = require("./is-empty");
+const { DEPARTMENTS, YEARS } = require("../config/adminOptions");
 
 const validateSubjectRegisterInput = (data) => {
   let errors = {};
@@ -19,10 +20,14 @@ const validateSubjectRegisterInput = (data) => {
 
   if (Validator.isEmpty(data.year)) {
     errors.year = "Year field is required";
+  } else if (!YEARS.includes(String(data.year))) {
+    errors.year = "Please select a valid year";
   }
 
   if (Validator.isEmpty(data.department)) {
     errors.department = "Department field is required";
+  } else if (!DEPARTMENTS.includes(data.department)) {
+    errors.department = "Please select a valid department";
   }
 
   if (Validator.isEmpty(data.totalLectures)) {

@@ -87,6 +87,21 @@ const getMarksHelper = (data) => {
   };
 };
 
+export const studentRegister = (studentData) => {
+  return async (dispatch) => {
+    try {
+      const { data } = await axios.post(
+        "/api/student/register",
+        studentData
+      );
+
+      return data;
+    } catch (err) {
+      throw err;
+    }
+  };
+};
+
 export const studentLogin = (studentCredentials) => {
   return async (dispatch) => {
     try {

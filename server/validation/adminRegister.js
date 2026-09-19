@@ -1,5 +1,6 @@
 const Validator = require("validator");
 const isEmpty = require("./is-empty");
+const { DEPARTMENTS } = require("../config/adminOptions");
 
 const validateAdminRegisterInput = (data) => {
   let errors = {};
@@ -23,6 +24,8 @@ const validateAdminRegisterInput = (data) => {
   }
   if (Validator.isEmpty(data.department)) {
     errors.department = "Department field is required";
+  } else if (!DEPARTMENTS.includes(data.department)) {
+    errors.department = "Please select a valid department";
   }
 
   if (Validator.isEmpty(data.contactNumber)) {

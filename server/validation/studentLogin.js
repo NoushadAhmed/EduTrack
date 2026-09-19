@@ -1,24 +1,39 @@
 const Validator = require("validator");
+
 const isEmpty = require("./is-empty");
 
 const validateStudentLoginInput = (data) => {
   let errors = {};
-  data.registrationNumber = !isEmpty(data.registrationNumber)
-    ? data.registrationNumber
-    : "";
-  data.password = !isEmpty(data.password) ? data.password : "";
 
-  if (!Validator.isLength(data.registrationNumber, { min: 12, max: 12 })) {
+  data.registrationNumber = !isEmpty(data.registrationNumber)
+    ? data.registrationNumber.trim().toUpperCase()
+    : "";
+
+  data.password = !isEmpty(data.password)
+    ? data.password
+    : "";
+
+  // Student USN format:
+  // Example: 2KA26CS003
+  // Length: 10 characters
+  if (
+    !Validator.isLength(data.registrationNumber, {
+      min: 10,
+      max: 10,
+    })
+  ) {
     errors.registrationNumber =
-      "Registration number must be 12 characters long";
+      "USN must be 10 characters long";
   }
 
   if (Validator.isEmpty(data.registrationNumber)) {
-    errors.registrationNumber = "Registration number is a required field";
+    errors.registrationNumber =
+      "USN is a required field";
   }
 
   if (Validator.isEmpty(data.password)) {
-    errors.password = "Password field is required";
+    errors.password =
+      "Password field is required";
   }
 
   return {

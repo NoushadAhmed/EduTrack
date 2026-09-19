@@ -1,282 +1,202 @@
-import React,{useState,useEffect} from 'react'
-import {useSelector,useDispatch} from 'react-redux'
-import {DataGrid} from '@material-ui/data-grid'
-import {useNavigate} from 'react-router-dom'
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { useAlert } from 'react-alert';
+import { DataGrid } from '@material-ui/data-grid';
+import styled, { keyframes } from 'styled-components';
+import FacultyNavbar from '../../components/FacultyNavbar';
+import { Input, Select, Btn, Card, FormGroup, Label, PageShell, SectionTitle } from '../../components/UI';
+import { fetchStudents, uploadMarks } from '../../redux/actions/facultyAction';
+import { ADMIN_DEPARTMENTS, ADMIN_SEMESTERS, ADMIN_SECTIONS, semesterToYear } from '../../config/adminOptions';
+import { colors, font, radius } from '../../styles/theme';
 
-import styled from 'styled-components'
-import FacultyNavbar from '../../components/FacultyNavbar'
-import {fetchStudents,uploadMarks} from '../../redux/actions/facultyAction'
+const fadeUp = keyframes`
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 
-import {Person,CalendarToday,Search,Class} from '@material-ui/icons'
-import {useAlert} from 'react-alert'
+const Content = styled.div`
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  animation: ${fadeUp} 0.3s ease both;
+  @media (max-width: 600px) { padding: 24px 16px; }
+`;
 
-const Container = styled.div` 
-width:100%;
-box-sizing:border-box;
-background-color: rgb(255, 255, 255);
-display:flex;
-flex-direction:column;
-border-left: 1px solid rgba(0, 0, 0, 0.158);
-height: 100vh;
-`
-const Heading = styled.h1` 
-font:400 2rem;
-padding:0.5vmax; 
-box-sizing:border-box;
-color:#0077b6;
-transition: all 0.5s;
-margin: 2rem;
-text-align: center;
-border-bottom:1px solid #0077b6;
-`
-const Form = styled.form` 
-width:100%;
-display: flex;
-flex-direction: column;
-align-items: center;
-margin: auto;
-padding: 3vmax;
-background-color: white;
-`
+const FilterRow = styled.div`
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+`;
 
-const FormItemContainer  = styled.div` 
-display:flex;
-justify-content:center;
-width: 100%;
-`
-const FormItem = styled.div` 
-display: flex;
-align-items: center;
-margin: 2rem;
->input{
-    padding:1vmax 4vmax;
-    padding-right:1vmax;
-    width: 100%;
-    box-sizing: border-box;
-    border: 1px solid rgba(0, 0, 0, 0.267);
-    border-radius: 4px;
-    font: 300 0.9vmax;
-    outline: none;
-}
->select{
-    padding:1vmax 4vmax;
-    padding-right:1vmax;
-    width: 100%;
-    box-sizing: border-box;
-    border: 1px solid rgba(0, 0, 0, 0.267);
-    border-radius: 4px;
-    font: 300 0.9vmax;
-    outline: none;
-}
->svg{
-    position:absolute;
-    transform:translateX(1vmax);
-    font-size:1.6vmax; 
-    color:rgba(0,0,0,0.623)
-}
-`
+const FilterField = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
+  flex: 1;
+`;
 
-const Button = styled.button` 
-    border-radius: 10px;
-    border:none;
-    background-color: #0077b6;
-    font: 400 1vmax;
-    color: white;
-    text-decoration: none;
-    padding: 0.5vmax;
-    width: 30%;
-    margin: 4vmax;
-    text-align: center;
-    cursor:pointer;
-`
+const GridWrap = styled.div`
+  background: ${colors.white};
+  border: 1px solid ${colors.border};
+  border-radius: ${radius.lg};
+  overflow: hidden;
+  margin-top: 24px;
+`;
 
+const SecondRow = styled.div`
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid ${colors.border};
+`;
 
 const FacultyUploadMarks = () => {
-    const alert = useAlert();
+  const alert = useAlert();
+  const store = useSelector((s) => s);
+  const faculty = useSelector((s) => s.faculty);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-    const handleInputChange = (value,_id) => {
-        const newMarks = [...marks];
-        let index = newMarks.findIndex(m => m._id === _id);
-        if(index === -1)
-        {
-            newMarks.push({_id,value})
-        }else{
-            newMarks[index].value = value;
-        }
- 
-        setMarks(newMarks);
- 
-     }
+  const [department, setDepartment] = useState('');
+  const [semester, setSemester] = useState('1');
+  const [section, setSection] = useState('');
+  const [exam, setExam] = useState('');
+  const [subjectCode, setSubjectCode] = useState('');
+  const [totalMarks, setTotalMarks] = useState('');
+  const [marks, setMarks] = useState([]);
+  const [isFetchingStudents, setIsFetchingStudents] = useState(true);
 
-    const columns = [
-        {field:"id",headerName:"No.",flex:0.2},
-        {field:"code",headerName:"Registration Number",flex:0.5},
-        {field:"name",headerName:"Name",flex:0.5},
-        {field:"year",headerName:"Marks",flex:0.3,type:"number",sortable:false,
-        renderCell:(params) => {
-           // console.log(params);
-            return(
-                <>
-                <input required onChange={(e) => handleInputChange(e.target.value,params.getValue(params.id,"id"))} type="number" style={{outline:"none",border:"none"}} placeholder="Enter marks"/>
-                </>
-            )
-        }},
-    ]
+  if (!faculty.isAuthenticated) { navigate('/'); return null; }
 
-    const store = useSelector((store) => store)
-    const faculty = useSelector((store) => store.faculty);
-    const navigate = useNavigate();
-    const dispatch = useDispatch();
+  const handleInputChange = (value, _id) => {
+    const newMarks = [...marks];
+    const index = newMarks.findIndex((m) => m._id === _id);
+    if (index === -1) newMarks.push({ _id, value });
+    else newMarks[index].value = value;
+    setMarks(newMarks);
+  };
 
-    const [department, setDepartment] = useState("")
-    const [year, setYear] = useState("")
-    const [marks, setMarks] = useState([])
-    const [section, setSection] = useState("")
-    const [subjectCode, setSubjectCode] = useState("")
-    const [totalMarks, setTotalMarks] = useState()
-    const [exam ,setExam] = useState("")
-    const [error, setError] = useState({})
-    const [errorHelper, setErrorHelper] = useState({})
-    const [isFetchingStudents,setIsFetchingStudents] = useState(true);
+  const columns = [
+    { field: 'id', headerName: 'No.', flex: 0.2 },
+    { field: 'code', headerName: 'Reg. Number', flex: 0.5 },
+    { field: 'name', headerName: 'Name', flex: 0.6 },
+    {
+      field: 'marks', headerName: 'Marks', flex: 0.4, sortable: false,
+      renderCell: (params) => (
+        <input
+          type="number"
+          placeholder="Enter marks"
+          onChange={(e) => handleInputChange(e.target.value, params.getValue(params.id, 'id'))}
+          style={{
+            width: '100%', border: 'none', outline: 'none',
+            fontFamily: 'Inter, sans-serif', fontSize: 13,
+          }}
+        />
+      ),
+    },
+  ];
 
-    useEffect(() => {
-        if (store.error) {
-            setError(store.error)
-        }
-    }, [store.error])
+  const rows = faculty.fetchedStudents.map((item) => ({
+    id: item._id,
+    code: item.registrationNumber,
+    name: item.name,
+  }));
 
-    useEffect(() => {
-        if (store.errorHelper) {
-            setErrorHelper(store.errorHelper)
-        }
-    }, [store.errorHelper])
+  const formHandler = (e) => {
+    e.preventDefault();
+    dispatch(fetchStudents(department, semesterToYear(semester), section));
+    setIsFetchingStudents(false);
+  };
 
-
-    const formHandler = (e) => {
-        e.preventDefault();
-        //console.log(year,section);
-       dispatch(fetchStudents(department, year,  section));
-       setIsFetchingStudents(prev => !prev);
-    }
-
-
-
-    const secondFormHandler = (e) => {
-        e.preventDefault();
-       // console.log(subjectCode, exam, totalMarks, marks, department, section);
-        dispatch(uploadMarks(subjectCode, exam, totalMarks, marks, department, section
-        ));
-        alert.success("Marks uploaded successfully");
-    }
-
-    const rows = [];
-    faculty.fetchedStudents.forEach((item) => {
-        rows.push({
-            id:item._id,
-            code:item.registrationNumber,
-            name:item.name,
-        })
-    })
-
+  const secondFormHandler = (e) => {
+    e.preventDefault();
+    dispatch(uploadMarks(subjectCode, exam, totalMarks, marks, department, semesterToYear(semester), section));
+    alert.success('Marks uploaded successfully');
+  };
 
   return (
-    <>
-    {
-        faculty.isAuthenticated?(
+    <PageShell>
+      <FacultyNavbar />
+      <Content>
+        <SectionTitle>Upload Marks</SectionTitle>
+        <Card>
+          {isFetchingStudents ? (
             <>
- <FacultyNavbar/>
-    <Container>
-    <Form>
-    <Heading>Upload Marks</Heading>
-   
-        {
-            isFetchingStudents?(
-                <>
-                <FormItemContainer>
-                <FormItem>
-                    <Class/>
-                    <select required onChange={(e) => setSection(e.target.value)}>
-                        <option>Section</option>
-                        <option>A</option>
-                        <option>B</option>
-                        <option>C</option>
-                        <option>D</option>
-                    </select>
-                </FormItem>
-                <FormItem>
-                    <Class/>
-                    <select onChange={(e) => setExam(e.target.value)}>
-                        <option>Exam</option>
-                        <option>Unit Test 1</option>
-                        <option>Unit Test 2</option>
-                        <option>Semester</option>
-                    </select>
-                </FormItem>
-    
-                </FormItemContainer>
-                <FormItemContainer>
-                <FormItem>
-                    <Person/>
-                    <select required onChange={(e) => setDepartment(e.target.value)}>
-                        <option>Department</option>
-                        <option>C.S.E</option>
-                        <option>E.C.E</option>
-                        <option>I.T</option>
-                        <option>Civil</option>
-                        <option>Mechanical</option>
-                    </select>
-                </FormItem>
-                <FormItem>
-                    <CalendarToday/>
-                    <select  required onChange={(e) => setYear(e.target.value)}>
-                        <option>Year</option>
-                        <option>1</option>
-                        <option>2</option>
-                        <option>3</option>
-                        <option>4</option>
-                    </select>
-                </FormItem>
-                </FormItemContainer>
-                
-                <Button type="submit" onClick={formHandler}>
-                   Search Students
-                 </Button>
-                </>
-            ):( <>
-                <FormItemContainer>
-        <FormItem>
-          <Search/>
-          <select required onChange={(e) => setSubjectCode(e.target.value)}>
-                        <option>Subject</option>
-                        {
-                            faculty.allSubjectCodeList.map(subjectCodeName => 
-                                <option>{subjectCodeName}</option>
-                            )
-                        }
-         </select>
-        </FormItem>
-        <FormItem>
-                  <Class/>
-                  <input type="number" placeholder="Enter total marks" required onChange={(e) => setTotalMarks(e.target.value)}/>
-        </FormItem>
-       </FormItemContainer>
-                <Button type="submit" onClick={secondFormHandler}>
-                   Submit Marks
-                 </Button>
-       </>
-            )
-        }
-     </Form>
-        <DataGrid rows={rows} columns={columns} pageSize={5} autoHeight/>
-    </Container>
+              <FilterRow>
+                <FilterField>
+                  <Label>Department</Label>
+                  <Select value={department} onChange={(e) => setDepartment(e.target.value)} required>
+                    <option value="">Select department</option>
+                    {ADMIN_DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+                  </Select>
+                </FilterField>
+                <FilterField>
+                  <Label>Semester</Label>
+                  <Select value={semester} onChange={(e) => setSemester(e.target.value)} required>
+                    {ADMIN_SEMESTERS.map((s) => <option key={s} value={s}>Semester {s}</option>)}
+                  </Select>
+                </FilterField>
+                <FilterField>
+                  <Label>Section</Label>
+                  <Select value={section} onChange={(e) => setSection(e.target.value)} required>
+                    <option value="">Select section</option>
+                    {ADMIN_SECTIONS.map((s) => <option key={s} value={s}>Section {s}</option>)}
+                  </Select>
+                </FilterField>
+                <FilterField>
+                  <Label>Exam</Label>
+                  <Select value={exam} onChange={(e) => setExam(e.target.value)} required>
+                    <option value="">Select exam</option>
+                    <option value="Unit Test 1">Unit Test 1</option>
+                    <option value="Unit Test 2">Unit Test 2</option>
+                    <option value="Semester">Semester</option>
+                  </Select>
+                </FilterField>
+              </FilterRow>
+              <div style={{ marginTop: 16 }}>
+                <Btn onClick={formHandler}>Search Students</Btn>
+              </div>
             </>
-        ):(
-            navigate('/')
-        )
-    }
-   
-    </>
-  )
-}
+          ) : (
+            <SecondRow>
+              <FilterField>
+                <Label>Subject</Label>
+                <Select value={subjectCode} onChange={(e) => setSubjectCode(e.target.value)} required>
+                  <option value="">Select subject</option>
+                  {faculty.allSubjectCodeList.map((code) => (
+                    <option key={code} value={code}>{code}</option>
+                  ))}
+                </Select>
+              </FilterField>
+              <FilterField>
+                <Label>Total Marks</Label>
+                <Input
+                  type="number"
+                  placeholder="e.g. 30"
+                  value={totalMarks}
+                  onChange={(e) => setTotalMarks(e.target.value)}
+                  required
+                />
+              </FilterField>
+              <Btn onClick={secondFormHandler} style={{ alignSelf: 'flex-end', height: 44 }}>
+                Submit Marks
+              </Btn>
+            </SecondRow>
+          )}
+        </Card>
 
-export default FacultyUploadMarks
+        <GridWrap>
+          <DataGrid rows={rows} columns={columns} pageSize={10} autoHeight />
+        </GridWrap>
+      </Content>
+    </PageShell>
+  );
+};
+
+export default FacultyUploadMarks;

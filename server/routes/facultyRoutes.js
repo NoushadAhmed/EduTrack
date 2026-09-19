@@ -1,9 +1,13 @@
 const express = require("express");
+
 const router = express.Router();
+
 const passport = require("passport");
+
 const upload = require("../utils/multer");
 
 const {
+  facultyRegister,
   facultyLogin,
   getAllSubjects,
   updateProfile,
@@ -15,37 +19,50 @@ const {
   uploadMarks,
 } = require("../controllers/facultyController");
 
-//Auth and Profile
+// Auth and Registration
+
+router.post("/register", facultyRegister);
+
 router.post("/login", facultyLogin);
+
 router.post("/forgotPassword", forgotPassword);
+
 router.post("/postOTP", postOTP);
+
+// Profile
+
 router.put(
   "/updateProfile",
   passport.authenticate("jwt", { session: false }),
   updateProfile
 );
+
 router.post(
   "/updatePassword",
   passport.authenticate("jwt", { session: false }),
   updatePassword
 );
 
-//Utility
+// Utility
+
 router.post(
   "/fetchStudents",
   passport.authenticate("jwt", { session: false }),
   fetchStudents
 );
+
 router.post(
   "/fetchAllSubjects",
   passport.authenticate("jwt", { session: false }),
   getAllSubjects
 );
+
 router.post(
   "/markAttendance",
   passport.authenticate("jwt", { session: false }),
   markAttendance
 );
+
 router.post(
   "/uploadMarks",
   passport.authenticate("jwt", { session: false }),

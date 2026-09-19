@@ -6,7 +6,9 @@ const passport = require("passport");
 const fileUpload = require("express-fileupload");
 const cors = require("cors");
 const dotenv = require("dotenv");
-dotenv.config();
+const path = require("path");
+
+dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 //Setup Middlewares
 const app = express();

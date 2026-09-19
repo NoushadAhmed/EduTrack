@@ -1,81 +1,40 @@
-import React from 'react'
-import styled from 'styled-components'
-import {format} from 'timeago.js'
+import React from 'react';
+import styled from 'styled-components';
+import { format } from 'timeago.js';
+import { colors, font, radius } from '../styles/theme';
 
-const MessageSent = styled.div` 
-display: flex;
-flex-direction: column;
-margin-top: 20px;
-align-items:flex-end;
-`
+const Row = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+  align-items: ${({ $own }) => $own ? 'flex-end' : 'flex-start'};
+`;
 
-const MessageReceived = styled.div` 
-display: flex;
-flex-direction: column;
-margin-top: 20px;
-`
+const Bubble = styled.p`
+  max-width: 72%;
+  padding: 10px 14px;
+  border-radius: ${({ $own }) => $own ? '14px 14px 4px 14px' : '14px 14px 14px 4px'};
+  background: ${({ $own }) => $own ? colors.primary : colors.bgPage};
+  color: ${({ $own }) => $own ? 'white' : colors.textPrimary};
+  font-size: 14px;
+  font-family: ${font.family};
+  line-height: 1.5;
+  border: ${({ $own }) => $own ? 'none' : `1px solid ${colors.border}`};
+  word-break: break-word;
+`;
 
-const MessageTop = styled.div`
-display:flex;
-`
+const Time = styled.span`
+  font-size: 11px;
+  color: ${colors.textMuted};
+  margin-top: 4px;
+  font-family: ${font.family};
+`;
 
-const MessageBottom = styled.div`
-font-size: 12px;
-margin-top: 10px;
-`
-
-const MessageText = styled.p` 
-padding:10px;
-border-radius:20px;
-background-color:#0077b6;
-color:white;
-max-width:300px;
-`
-
-const MessageSentText = styled.p`
-padding:10px;
-border-radius:20px;
-background-color:tomato;
-color:white;
-max-width:300px;
-`
-
-export default function({message,own}){
-    const MessageFriend = () => {
-        return(
-            <MessageReceived>
-                <MessageTop>
-                    <MessageText>{message.message}</MessageText>
-                </MessageTop>
-                <MessageBottom>
-                    {format(message.createdAt)}
-                </MessageBottom>
-            </MessageReceived>
-        )
-    }
-
-    const MessageSelf = () => {
-        return(
-            <MessageSent>
-                <MessageTop>
-                    <MessageSentText>{message.message}</MessageSentText>
-                </MessageTop>
-                <MessageBottom>
-                    {format(message.createdAt)}
-                </MessageBottom>
-            </MessageSent>
-        )
-    }
-
-    return(
-        <>
-        {
-            own?(
-                <MessageSelf/>
-            ):(
-                <MessageFriend/>
-            )
-        }
-        </>
-    )
+export default function Message({ message, own }) {
+  return (
+    <Row $own={own}>
+      <Bubble $own={own}>{message.message}</Bubble>
+      <Time>{format(message.createdAt)}</Time>
+    </Row>
+  );
 }

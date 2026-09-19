@@ -17,6 +17,42 @@ const Admin = require("../models/Admin");
 
 //Config
 const keys = require("../config/key");
+const { DEPARTMENT_CODES } = require("../config/adminOptions");
+
+const getDepartmentCode = (department) => DEPARTMENT_CODES[department];
+
+const registrationSequence = (count) => count.toString().padStart(3, "0");
+
+const getStudentRegistrationNumber = async (department, batchYear) => {
+  const shortDepartmentCodes = {
+    CSE: "CS",
+    ECE: "EC",
+    EEE: "EE",
+    ME: "ME",
+    CIVIL: "CV",
+    AIML: "AI",
+  };
+
+  const departmentCode = shortDepartmentCodes[department] || "CS";
+  const yearCode = String(batchYear).slice(-2);
+
+  const lastStudent = await Student.findOne({
+    department,
+    registrationNumber: {
+      $regex: `^2KA${yearCode}${departmentCode}`,
+    },
+  }).sort({ registrationNumber: -1 });
+
+  let sequence = 0;
+  if (lastStudent) {
+    const lastSequence = Number(
+      (lastStudent.registrationNumber.match(/(\d{3})$/) || ["0"])[0]
+    );
+    sequence = lastSequence + 1;
+  }
+
+  return `2KA${yearCode}${departmentCode}${String(sequence).padStart(3, "0")}`;
+};
 
 exports.addAdmin = async (req, res, next) => {
   try {
@@ -39,33 +75,10 @@ exports.addAdmin = async (req, res, next) => {
 
     const avatarUrl = gravatar.url(email, { s: "200", r: "pg", d: "mm" });
 
-    let departmentHelper;
-    if (department === "C.S.E") {
-      departmentHelper = "01";
-    } else if (department === "E.C.E") {
-      departmentHelper = "02";
-    } else if (department === "I.T") {
-      departmentHelper = "03";
-    } else if (department === "Mechanical") {
-      departmentHelper = "04";
-    } else if (department === "Civil") {
-      departmentHelper = "05";
-    } else if (department === "E.E.E") {
-      departmentHelper = "06";
-    } else {
-      departmentHelper = "00";
-    }
+    const departmentHelper = getDepartmentCode(department);
 
     const admins = await Admin.find({ department });
-    let helper;
-
-    if (admins.length < 10) {
-      helper = "00" + admins.length.toString();
-    } else if (admins.length < 100 && admins.length > 9) {
-      helper = "0" + admins.length.toString();
-    } else {
-      helper = admins.length.toString();
-    }
+    const helper = registrationSequence(admins.length);
 
     let hashedPassword;
     hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
@@ -169,39 +182,13 @@ exports.addStudent = async (req, res, next) => {
     }
 
     const avatarUrl = gravatar.url(email, { s: "200", r: "pg", d: "mm" });
-    let departmentHelper;
-    if (department === "C.S.E") {
-      departmentHelper = "01";
-    } else if (department === "E.C.E") {
-      departmentHelper = "02";
-    } else if (department === "I.T") {
-      departmentHelper = "03";
-    } else if (department === "Mechanical") {
-      departmentHelper = "04";
-    } else if (department === "Civil") {
-      departmentHelper = "05";
-    } else {
-      departmentHelper = "06";
-    }
-
-    const students = await Student.find({ department });
-    let helper;
-    if (students.length < 10) {
-      helper = "00" + students.length.toString();
-    } else if (students.length < 100 && students.length > 9) {
-      helper = "0" + students.length.toString();
-    } else {
-      helper = students.length.toString();
-    }
 
     let hashedPassword;
     hashedPassword = await bcrypt.hash(process.env.STUDENT_PASSWORD, 10);
     var date = new Date();
     const batch = date.getFullYear();
 
-    var components = ["STU", batch, departmentHelper, helper];
-
-    var registrationNumber = components.join("");
+    const registrationNumber = await getStudentRegistrationNumber(department, batch);
     const newStudent = await new Student({
       name,
       email,
@@ -257,30 +244,10 @@ exports.addFaculty = async (req, res, next) => {
       d: "mm", // Default
     });
 
-    let departmentHelper;
-    if (department === "C.S.E") {
-      departmentHelper = "01";
-    } else if (department === "E.C.E") {
-      departmentHelper = "02";
-    } else if (department === "I.T") {
-      departmentHelper = "03";
-    } else if (department === "Mechanical") {
-      departmentHelper = "04";
-    } else if (department === "Civil") {
-      departmentHelper = "05";
-    } else {
-      departmentHelper = "06";
-    }
+    const departmentHelper = getDepartmentCode(department);
 
     const faculties = await Faculty.find({ department });
-    let helper;
-    if (faculties.length < 10) {
-      helper = "00" + faculties.length.toString();
-    } else if (faculties.length < 100 && faculties.length > 9) {
-      helper = "0" + faculties.length.toString();
-    } else {
-      helper = faculties.length.toString();
-    }
+    const helper = registrationSequence(faculties.length);
 
     let hashedPassword;
     hashedPassword = await bcrypt.hash(process.env.FACULTY_PASSWORD, 10);

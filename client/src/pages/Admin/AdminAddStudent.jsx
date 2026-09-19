@@ -1,239 +1,138 @@
-import React, { useState, useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
-import {useAlert} from 'react-alert'
+import React, { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { useAlert } from 'react-alert';
+import styled, { keyframes } from 'styled-components';
+import AdminNavbar from '../../components/AdminNavbar';
+import { Input, Select, Btn, Card, FormGroup, Label, PageShell, SectionTitle } from '../../components/UI';
+import { adminAddStudent } from '../../redux/actions/adminAction';
+import { ADMIN_DEPARTMENTS, ADMIN_SECTIONS, ADMIN_SEMESTERS, semesterToYear } from '../../config/adminOptions';
+import { colors, font, radius } from '../../styles/theme';
 
-import AdminNavbar from '../../components/AdminNavbar'
-import styled from 'styled-components'
+const fadeUp = keyframes`
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 
-import {Face,MailOutline,Class,Phone,PhoneIphone,SupervisorAccount,CalendarToday,} from '@material-ui/icons'
-import {adminAddStudent} from '../../redux/actions/adminAction'
+const Content = styled.div`
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  animation: ${fadeUp} 0.3s ease both;
 
-const Container = styled.div`
-width:100vw;
-height:100vh;
-max-width:100%;
-display:flex;
-justify-content:center;
-align-items: center;
-background-color:rgb(231,231,231);
-`
+  @media (max-width: 600px) { padding: 24px 16px; }
+`;
 
-const ProfileBox = styled.div` 
-background-color:white;
-width:70vw;
-height:90vh;
-box-sizing:border-box;
-`
+const FormGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 
-const ProfileHeader = styled.h1` 
-text-align:center;
-color:#0077b6;
-font:400 1.3vmax;
-padding:1.3vmax;
-border-bottom:1px solid #0077b6;
-width:50%;
-margin:auto;
-`
+  @media (max-width: 500px) { grid-template-columns: 1fr; }
+`;
 
-const ProfileForm = styled.form` 
-display:flex;
-flex-direction: column;
-align-items:center;
-justify-content:space-evenly;
-margin: auto;
-padding: 2vmax;
-height: auto;
-width:70%;
->div{
-    display:flex;
-    align-items:center;
-    width:100%;
-    margin-bottom:10px;
-}
-`
-const ProfileName = styled.div` 
->select{
-    padding:1vmax 4vmax;
-    padding-right:1vmax;
-    width:100%;
-    box-sizing:border-box;
-    border:1px solid rgba(0,0,0,0.267);
-    border-radius:4px;
-    font:300 0.9vmax;
-    outline:none;
-};
->svg{
-    position:absolute;
-    transform:translateX(1vmax);
-    font-size:1.6vmax;
-}
-`
-const ProfileEmail = styled.div` 
->svg{
-    position:absolute;
-    transform:translateX(1vmax);
-    font-size:1.6vmax;
-}
-`
-const ProfilePhone = styled.div` 
->svg{
-    position:absolute;
-    transform:translateX(1vmax);
-    font-size:1.6vmax;
-}
-`
-
-const ProfileImage = styled.div` 
->img{
-    width:3vmax;
-    border-radius:100%;
-    margin:1vmax;
-}
->input{
-    display:flex;
-    padding:0%;
-}
-`
-const ProfileInput = styled.input` 
-padding:1vmax 4vmax;
-padding-right:1vmax;
-width:100%;
-box-sizing:border-box;
-border:1px solid #0077b6;
-border-radius:4px;
-font:300 0.9vmax;
-outline:none;
-`
-const ProfileButton = styled.button` 
-border:none;
-background-color: #0077b6;
-color:white;
-font:300 0.9vmax;
-width: 100%;
-  padding: 0.8vmax;
-  cursor: pointer;
-  border-radius: 4px;
-  outline: none;
-  box-shadow:0 2px 5px rgba(0,0,0,0.219);
-`
+const FullRow = styled.div`
+  grid-column: 1 / -1;
+`;
 
 const AdminAddStudent = () => {
-    const dispatch = useDispatch();
-    const admin = useSelector((store) => store.admin);
-    const navigate = useNavigate();
-    const alert = useAlert();
+  const dispatch = useDispatch();
+  const admin = useSelector((s) => s.admin);
+  const navigate = useNavigate();
+  const alert = useAlert();
 
-    const [name,setName] = useState("");
-    const [email,setEmail] = useState("");
-    const [department,setDepartment] = useState("");
-    const [year,setYear] = useState("");
-    const [section,setSection] = useState("");
-    const [studentMobileNumber, setStudentMobileNumber] = useState('')
-    const [fatherName, setFatherName] = useState('')
-    const [fatherMobileNumber, setFatherMobileNumber] = useState('')
-    const [error, setError] = useState({})
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [department, setDepartment] = useState('');
+  const [semester, setSemester] = useState('1');
+  const [section, setSection] = useState('');
+  const [studentMobileNumber, setStudentMobileNumber] = useState('');
+  const [fatherName, setFatherName] = useState('');
+  const [fatherMobileNumber, setFatherMobileNumber] = useState('');
 
-    const formHandler = (e) => {
-        e.preventDefault();
-        /*
-        const myForm = new FormData();
-        myForm.append("name",name);
-        myForm.append("year",year);
-        myForm.append("section",section);
-        myForm.append("department",department);
-        myForm.append("studentMobileNumber",studentMobileNumber);
-        myForm.append("email",email);
-        myForm.append("fatherName",fatherName);
-        myForm.append("fatherMobileNumber",fatherMobileNumber);        
-        myForm.append("avatar",avatar);
-        console.log(myForm);
-        */
-        
+  if (!admin.isAuthenticated) { navigate('/admin/login'); return null; }
 
-        dispatch(adminAddStudent({name,year,section,department,studentMobileNumber,email,fatherName,fatherMobileNumber}));
-        alert.success("Student Registration Successful");
-        navigate('/admin/students');
-    }
+  const formHandler = (e) => {
+    e.preventDefault();
+    const backendYear = semesterToYear(semester);
+    dispatch(adminAddStudent({ name, year: backendYear, section, department, studentMobileNumber, email, fatherName, fatherMobileNumber }));
+    alert.success('Student registered successfully');
+    navigate('/admin/students');
+  };
 
-    return(
-           <>
-           {
-               admin.isAuthenticated?(
-                   <>
-                   <AdminNavbar/>
-           <Container>
-            <ProfileBox>
-                <ProfileHeader>
-                    Add Student
-                </ProfileHeader>
-                <ProfileForm encType='multiform/form-data' onSubmit={formHandler}>
-                   <ProfileName>
-                        <Face/>
-                        <ProfileInput type="text" onChange = {(e) => setName(e.target.value)} placeholder="Name" required name="name" value={name}/>
-                    </ProfileName>
-                    <ProfileEmail>
-                    <MailOutline/>
-                        <ProfileInput type="text" onChange = {(e) => setEmail(e.target.value)} placeholder="Email" required name="email" value={email}/>
-                    </ProfileEmail>
-                    <ProfilePhone>
-                        <Phone/>
-                        <ProfileInput type="text" onChange = {(e) => setStudentMobileNumber(e.target.value)} placeholder="Student Mobile" required name="studentMobileNumber" value={studentMobileNumber}/>
-                    </ProfilePhone>
-                    <ProfileName>
-                        <Class/>
-                        <select onChange = {(e) => setDepartment(e.target.value)}>
-                            <option>Department</option>
-                            <option>C.S.E</option>
-                            <option>I.T</option>
-                            <option>Mechanical</option>
-                            <option>Civil</option>
-                            <option>E.C.E</option>
-                        </select>
-                    </ProfileName>
-                    <ProfileName>
-                        <Class/>
-                        <select onChange = {(e) => setSection(e.target.value)}>
-                            <option>Section</option>
-                            <option>A</option>
-                            <option>B</option>
-                            <option>C</option>
-                            <option>D</option>
-                        </select>
-                    </ProfileName>
-                    <ProfileName>
-                        <CalendarToday/>
-                        <select onChange = {(e) => setYear(e.target.value)}>
-                            <option>Year</option>
-                            <option>1</option>
-                            <option>2</option>
-                            <option>3</option>
-                            <option>4</option>
-                        </select>
-                    </ProfileName>
-                    <ProfileName>
-                        <SupervisorAccount/>
-                        <ProfileInput onChange = {(e) => setFatherName(e.target.value)} type="text" placeholder="Father Name" required name="fatherName" value={fatherName}/>
-                    </ProfileName>
-                    <ProfilePhone>
-                        <PhoneIphone/>
-                        <ProfileInput onChange = {(e) => setFatherMobileNumber(e.target.value)} type="text" placeholder="Father Mobile" required name="fatherMobileNumber" value={fatherMobileNumber}/>
-                    </ProfilePhone>
-                
-                    <ProfileButton type="submit">
-                        Register 
-                    </ProfileButton>
-                </ProfileForm>
-            </ProfileBox>
-        </Container>
-                   </>
-               ):(
-                   navigate('/admin/login')
-               )
-           }
-           
-           </>
-    )
-}
+  return (
+    <PageShell>
+      <AdminNavbar />
+      <Content>
+        <SectionTitle>Add Student</SectionTitle>
+        <Card>
+          <form onSubmit={formHandler}>
+            <FormGrid>
+              <FullRow>
+                <FormGroup>
+                  <Label>Full Name</Label>
+                  <Input placeholder="Student full name" value={name} onChange={(e) => setName(e.target.value)} required />
+                </FormGroup>
+              </FullRow>
+
+              <FullRow>
+                <FormGroup>
+                  <Label>Email Address</Label>
+                  <Input type="email" placeholder="student@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </FormGroup>
+              </FullRow>
+
+              <FormGroup>
+                <Label>Student Mobile</Label>
+                <Input type="text" placeholder="10-digit number" value={studentMobileNumber} onChange={(e) => setStudentMobileNumber(e.target.value)} required />
+              </FormGroup>
+
+              <FormGroup>
+                <Label>Department</Label>
+                <Select value={department} onChange={(e) => setDepartment(e.target.value)} required>
+                  <option value="">Select department</option>
+                  {ADMIN_DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+                </Select>
+              </FormGroup>
+
+              <FormGroup>
+                <Label>Semester</Label>
+                <Select value={semester} onChange={(e) => setSemester(e.target.value)} required>
+                  {ADMIN_SEMESTERS.map((s) => <option key={s} value={s}>Semester {s}</option>)}
+                </Select>
+              </FormGroup>
+
+              <FormGroup>
+                <Label>Section</Label>
+                <Select value={section} onChange={(e) => setSection(e.target.value)} required>
+                  <option value="">Select section</option>
+                  {ADMIN_SECTIONS.map((s) => <option key={s} value={s}>Section {s}</option>)}
+                </Select>
+              </FormGroup>
+
+              <FullRow>
+                <FormGroup>
+                  <Label>Father's Name</Label>
+                  <Input placeholder="Father's full name" value={fatherName} onChange={(e) => setFatherName(e.target.value)} required />
+                </FormGroup>
+              </FullRow>
+
+              <FullRow>
+                <FormGroup>
+                  <Label>Father's Mobile</Label>
+                  <Input type="text" placeholder="10-digit number" value={fatherMobileNumber} onChange={(e) => setFatherMobileNumber(e.target.value)} required />
+                </FormGroup>
+              </FullRow>
+
+              <FullRow>
+                <Btn type="submit" $full>Register Student</Btn>
+              </FullRow>
+            </FormGrid>
+          </form>
+        </Card>
+      </Content>
+    </PageShell>
+  );
+};
 
 export default AdminAddStudent;

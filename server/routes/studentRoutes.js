@@ -5,6 +5,7 @@ const upload = require("../utils/multer");
 
 const {
   studentLogin,
+  studentRegister,
   getAllStudents,
   getAllMarks,
   getAllSubjects,
@@ -23,6 +24,7 @@ const {
 
 //Auth and Profile Related
 router.post("/login", studentLogin);
+router.post("/register", studentRegister);
 router.post("/forgotPassword", forgotPassword);
 router.post("/postOTP", postOTP);
 router.put(

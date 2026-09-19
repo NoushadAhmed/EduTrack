@@ -1,228 +1,127 @@
-import React, { useState, useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { useNavigate,useParams } from 'react-router-dom'
-import {useAlert} from 'react-alert'
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useAlert } from 'react-alert';
+import styled, { keyframes } from 'styled-components';
+import { getOTPStudent, submitOTPStudent } from '../redux/actions/studentAction';
+import { getOTPFaculty, submitOTPFaculty } from '../redux/actions/facultyAction';
+import { Input, Btn, Card, FormGroup, Label } from '../components/UI';
+import { colors, font, radius } from '../styles/theme';
 
-import { getOTPStudent, submitOTPStudent } from '../redux/actions/studentAction'
-import { getOTPFaculty, submitOTPFaculty } from '../redux/actions/facultyAction'
+const fadeUp = keyframes`
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 
-import styled from 'styled-components'
+const Page = styled.div`
+  min-height: 100vh;
+  background: ${colors.bgPage};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  font-family: ${font.family};
+`;
 
-import {Class,Face,MailOutline,Phone,PhoneIphone,SupervisorAccount,CalendarToday,} from '@material-ui/icons'
+const Wrap = styled.div`
+  width: 100%;
+  max-width: 400px;
+  animation: ${fadeUp} 0.3s ease both;
+`;
 
-const Container = styled.div`
-width:100vw;
-height:100vh;
-max-width:100%;
-display:flex;
-justify-content:center;
-align-items: center;
-background-color:rgb(231,231,231);
-`
+const Title = styled.h2`
+  font-size: 22px;
+  font-weight: 700;
+  color: ${colors.textPrimary};
+  margin-bottom: 4px;
+`;
 
-const ProfileBox = styled.div` 
-background-color:white;
-width:25vw;
-height:70vh;
-box-sizing:border-box;
-`
+const Sub = styled.p`
+  font-size: 13px;
+  color: ${colors.textMuted};
+  margin-bottom: 24px;
+`;
 
-const ProfileHeader = styled.h1` 
-text-align:center;
-color:#0077b6;
-font:400 1.3vmax;
-padding:1.3vmax;
-border-bottom:1px solid #0077b6;
-width:50%;
-margin:auto;
-`
-
-const ProfileForm = styled.form` 
-display:flex;
-flex-direction: column;
-align-items:center;
-justify-content:space-evenly;
-margin: auto;
-padding: 2vmax;
-height: 70%;
->div{
-    display:flex;
-    align-items:center;
-    width:100%;
-}
-`
-const ProfileName = styled.div` 
->select{
-    padding:1vmax 4vmax;
-    padding-right:1vmax;
-    width:100%;
-    box-sizing:border-box;
-    border:1px solid rgba(0,0,0,0.267);
-    border-radius:4px;
-    font:300 0.9vmax;
-    outline:none;
-};
->svg{
-    position:absolute;
-    transform:translateX(1vmax);
-    font-size:1.6vmax;
-}
-`
-const ProfileEmail = styled.div` 
->svg{
-    position:absolute;
-    transform:translateX(1vmax);
-    font-size:1.6vmax;
-}
-`
-const ProfilePhone = styled.div` 
->svg{
-    position:absolute;
-    transform:translateX(1vmax);
-    font-size:1.6vmax;
-}
-`
-
-const ProfileImage = styled.div` 
->img{
-    width:3vmax;
-    border-radius:100%;
-    margin:1vmax;
-}
->input{
-    display:flex;
-    padding:0%;
-}
-`
-const ProfileInput = styled.input` 
-padding:1vmax 4vmax;
-padding-right:1vmax;
-width:100%;
-box-sizing:border-box;
-border:1px solid #0077b6;
-border-radius:4px;
-font:300 0.9vmax;
-outline:none;
-`
-const ProfileButton = styled.button` 
-border:none;
-background-color: #0077b6;
-color:white;
-font:300 0.9vmax;
-width: 100%;
-  padding: 0.8vmax;
-  cursor: pointer;
-  border-radius: 4px;
-  outline: none;
-  box-shadow:0 2px 5px rgba(0,0,0,0.219);
-`
+const BackLink = styled(Link)`
+  display: inline-block;
+  margin-top: 16px;
+  font-size: 13px;
+  color: ${colors.primary};
+  font-family: ${font.family};
+`;
 
 const ForgotPassword = () => {
-    const store = useSelector((store) => store)
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
-    const params = useParams();
-    const alert = useAlert();
+  const store = useSelector((s) => s);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const params = useParams();
+  const alert = useAlert();
 
-    const [user,setUser] = useState("");
-    const [email,setEmail] = useState("");
-    const [otp, setOtp] = useState('')
-    const [newPassword, setNewPassword] = useState('')
-    const [confirmNewPassword, setConfirmNewPassword] = useState("")
-    
-   
-    const [error, setErrors] = useState({})
-    const [helper,setHelper] = useState(false);
+  const [user, setUser] = useState('');
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [helper, setHelper] = useState(false);
 
-    useEffect(() => {
-      setUser(params.user);
-    },[user])
+  useEffect(() => { setUser(params.user); }, [params.user]);
+  useEffect(() => { if (store.student.flag) setHelper(true); }, [store.student.flag]);
 
+  const sendOtpHandler = (e) => {
+    e.preventDefault();
+    if (user === 'student') dispatch(getOTPStudent({ email }));
+    else if (user === 'faculty') dispatch(getOTPFaculty({ email }));
+  };
 
-    useEffect(() => {
-        if (store.student.flag) {
-            setHelper(true)
-        }
-    },[store.student.flag])
-
-    const sendOtpHandler = (e) => {
-        e.preventDefault();
-        if(user === "student")
-        {
-            dispatch(getOTPStudent({email}))
-        }
-
-        else if (user === "faculty") {
-            dispatch(getOTPFaculty({email}))
-         }
+  const submitOtpHandler = (e) => {
+    e.preventDefault();
+    if (user === 'student') {
+      dispatch(submitOTPStudent({ email, otp, newPassword, confirmNewPassword }));
+    } else if (user === 'faculty') {
+      dispatch(submitOTPFaculty({ email, otp, newPassword, confirmNewPassword }));
     }
-    
-    const submitOtpHandler = (e) => {
-        e.preventDefault();  
-        if (user === "student") {
-            dispatch(submitOTPStudent({ email, otp, newPassword, confirmNewPassword }));
-            alert.success("Please login with New Password");
-            navigate('/');
-        }
-        else if (user === "faculty")
-        {
-            dispatch(submitOTPFaculty({ email, otp, newPassword, confirmNewPassword }));
-            alert.success("Please login with New Password");
-            navigate('/')
-        }
+    alert.success('Please login with your new password.');
+    navigate('/');
+  };
 
-    }
+  return (
+    <Page>
+      <Wrap>
+        <Title>Reset Password</Title>
+        <Sub>{helper ? 'Enter the OTP sent to your email.' : 'Enter your registered email address.'}</Sub>
 
-    return(
-           <>
-           {
-               !helper?(
-      <Container>
-            <ProfileBox>
-                <ProfileHeader>
-                     Forgot Password
-                </ProfileHeader>
-                <ProfileForm encType='multiform/form-data' onSubmit={sendOtpHandler}>
-                    <ProfileEmail>
-                    <MailOutline/>
-                        <ProfileInput type="text" placeholder="Email"  onChange = {(e) => setEmail(e.target.value)} required name="email" value={email}/>
-                    </ProfileEmail>
-                    <ProfileButton type="submit">
-                        Submit
-                    </ProfileButton>
-                </ProfileForm>
-            </ProfileBox>
-        </Container>
-               ):(
-        <Container>
-            <ProfileBox>
-                <ProfileHeader>
-                     Forgot Password
-                </ProfileHeader>
-                <ProfileForm encType='multiform/form-data' onSubmit={submitOtpHandler}>
-                    <ProfilePhone>
-                        <Phone/>
-                        <ProfileInput type="text" placeholder="OTP" required  value={otp} onChange={(e) => setOtp(e.target.value)}/>
-                    </ProfilePhone>
-                    <ProfileName>
-                        <SupervisorAccount/>
-                        <ProfileInput type="password" placeholder="New Password" required  value={newPassword} onChange={(e) => setNewPassword(e.target.value)}/>
-                    </ProfileName>
-                    <ProfileName>
-                        <SupervisorAccount/>
-                        <ProfileInput type="password" placeholder="Confirm New Password" required  value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} />
-                    </ProfileName>
-                    <ProfileButton type="submit">
-                        Submit
-                    </ProfileButton>
-                </ProfileForm>
-            </ProfileBox>
-        </Container>
-               )
-           }
-           
-           </>
-    )
-}
+        <Card>
+          {!helper ? (
+            <form onSubmit={sendOtpHandler}>
+              <FormGroup style={{ marginBottom: 20 }}>
+                <Label>Email Address</Label>
+                <Input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </FormGroup>
+              <Btn type="submit" $full>Send OTP</Btn>
+            </form>
+          ) : (
+            <form onSubmit={submitOtpHandler}>
+              <FormGroup style={{ marginBottom: 14 }}>
+                <Label>OTP</Label>
+                <Input type="text" placeholder="Enter OTP" value={otp} onChange={(e) => setOtp(e.target.value)} required />
+              </FormGroup>
+              <FormGroup style={{ marginBottom: 14 }}>
+                <Label>New Password</Label>
+                <Input type="password" placeholder="New password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+              </FormGroup>
+              <FormGroup style={{ marginBottom: 20 }}>
+                <Label>Confirm New Password</Label>
+                <Input type="password" placeholder="Confirm password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} required />
+              </FormGroup>
+              <Btn type="submit" $full>Reset Password</Btn>
+            </form>
+          )}
+        </Card>
+
+        <BackLink to="/">← Back to login</BackLink>
+      </Wrap>
+    </Page>
+  );
+};
 
 export default ForgotPassword;

@@ -1,211 +1,132 @@
-import React,{useState,useEffect} from 'react'
-import {useSelector,useDispatch} from 'react-redux'
-import {DataGrid} from '@material-ui/data-grid'
-import {Link,useNavigate} from 'react-router-dom';
-
+import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
+import { DataGrid } from '@material-ui/data-grid';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import styled, { keyframes } from 'styled-components';
+import { Explore } from '@material-ui/icons';
+import StudentNavbar from '../../components/StudentNavbar';
+import { Select, Btn, Card, FormGroup, Label, PageShell, SectionTitle } from '../../components/UI';
+import { colors, radius } from '../../styles/theme';
+import { ADMIN_DEPARTMENTS, ADMIN_YEARS, ADMIN_SECTIONS } from '../../config/adminOptions';
 
-import styled from 'styled-components'
-import StudentNavbar from '../../components/StudentNavbar'
+const fadeUp = keyframes`
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 
-import {Person,CalendarToday,Search,Class,Explore} from '@material-ui/icons'
+const Content = styled.div`
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  animation: ${fadeUp} 0.3s ease both;
+  @media (max-width: 600px) { padding: 24px 16px; }
+`;
 
-const Container = styled.div` 
-width:100%;
-box-sizing:border-box;
-background-color: rgb(255, 255, 255);
-display:flex;
-flex-direction:column;
-border-left: 1px solid rgba(0, 0, 0, 0.158);
-height: 100vh;
-`
-const Heading = styled.h1` 
-font:400 2rem;
-padding:0.5vmax; 
-box-sizing:border-box;
-color:#0077b6;
-transition: all 0.5s;
-margin: 2rem;
-text-align: center;
-border-bottom:1px solid #0077b6;
-`
-const Form = styled.form` 
-width:100%;
-display: flex;
-flex-direction: column;
-align-items: center;
-margin: auto;
-padding: 3vmax;
-background-color: white;
-`
+const FilterRow = styled.div`
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+`;
 
-const FormItemContainer  = styled.div` 
-display:flex;
-justify-content:center;
-width: 100%;
-`
-const FormItem = styled.div` 
-display: flex;
-align-items: center;
-margin: 2rem;
->input{
-    padding:1vmax 4vmax;
-    padding-right:1vmax;
-    width: 100%;
-    box-sizing: border-box;
-    border: 1px solid rgba(0, 0, 0, 0.267);
-    border-radius: 4px;
-    font: 300 0.9vmax;
-    outline: none;
-}
->select{
-    padding:1vmax 4vmax;
-    padding-right:1vmax;
-    width: 100%;
-    box-sizing: border-box;
-    border: 1px solid rgba(0, 0, 0, 0.267);
-    border-radius: 4px;
-    font: 300 0.9vmax;
-    outline: none;
-}
->svg{
-    position:absolute;
-    transform:translateX(1vmax);
-    font-size:1.6vmax; 
-    color:rgba(0,0,0,0.623)
-}
-`
+const FilterField = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
+  flex: 1;
+`;
 
-const Button = styled.button` 
-    border-radius: 10px;
-    border:none;
-    background-color: #0077b6;
-    font: 400 1vmax;
-    color: white;
-    text-decoration: none;
-    padding: 0.5vmax;
-    width: 30%;
-    margin: 4vmax;
-    text-align: center;
-    cursor:pointer;
-`
-
+const GridWrap = styled.div`
+  background: ${colors.white};
+  border: 1px solid ${colors.border};
+  border-radius: ${radius.lg};
+  overflow: hidden;
+`;
 
 const StudentSearch = () => {
+  const student = useSelector((s) => s.student);
+  const navigate = useNavigate();
 
-    const student = useSelector((store) => store.student);
-    const navigate = useNavigate();
-    
+  const [department, setDepartment] = useState('');
+  const [year, setYear] = useState('');
+  const [section, setSection] = useState('');
+  const [result, setResult] = useState([]);
 
-    const [department, setDepartment] = useState("")
-    const [year, setYear] = useState("")
-    const [section, setSection] = useState("")
-    const [result, setResult] = useState([])
-
-    const fetchStudents = async() => {
-        try{
-            const {data} = await axios.post('http://localhost:3000/api/student/getAllStudents',{
-                department,year,section
-            })
-
-            setResult(data.result);
-
-        }catch(err)
-        {
-            alert("Something went wrong..");
-        }
+  const fetchStudents = async () => {
+    try {
+      const { data } = await axios.post('/api/student/getAllStudents', { department, year, section });
+      setResult(data.result);
+    } catch (err) {
+      alert('Something went wrong.');
     }
+  };
 
-    const columns = [
-        {field:"num",headerName:"S.R No.",flex:0.1},
-        {field:"id",headerName:"G.R Number",flex:0.5},
-        {field:"name",headerName:"Name",flex:0.5},
-        {field:"email",headerName:"Email",flex:0.3},
-        {field:"section",headerName:"Section",flex:0.4},
-        {field:"visit",headerName:"Visit",flex:0.2,type:"number",sortable:"false",renderCell:(params) => {
-            return(
-                <>
-                <Link to={`/profile/${params.getValue(params.id,"id")}`}>
-                 <Explore style={{color:"#0077b6"}}/>
-                </Link>
-                </>
-            )
-        }}
-    ]
+  const columns = [
+    { field: 'num', headerName: 'No.', flex: 0.2 },
+    { field: 'id', headerName: 'Reg. Number', flex: 0.5 },
+    { field: 'name', headerName: 'Name', flex: 0.5 },
+    { field: 'email', headerName: 'Email', flex: 0.5 },
+    { field: 'section', headerName: 'Section', flex: 0.3 },
+    {
+      field: 'visit', headerName: 'Profile', flex: 0.2, sortable: false,
+      renderCell: (params) => (
+        <Link to={`/profile/${params.getValue(params.id, 'id')}`}>
+          <Explore style={{ color: colors.primary }} />
+        </Link>
+      ),
+    },
+  ];
 
-    /*
-    const subjects = [
-        {no:1,code:12345,name:"Shifon Shaikh",email:"abc123@gmail.com",year:"A"},
-        {no:2,code:12345,name:"Rahul Yadav",email:"abc123@gmail.com",year:"B"},
-        {no:3,code:12345,name:"Disha Patani",email:"abc123@gmail.com",year:"C"},
-        {no:4,code:12345,name:"Rakesh Mali",email:"abc123@gmail.com",year:"C"},
-        {no:5,code:12345,name:"Raj Aryan",email:"abc123@gmail.com",year:"D"},
-    ]
-    */
-
-    const rows = [];
-    result && result.forEach((item,index) => {
-        rows.push({
-            num:index + 1,
-            id:item.registrationNumber,
-            name:item.name,
-            email:item.email,
-            section:item.section
-        })
-    })
-
-    const formHandler = (e) => {
-        e.preventDefault();
-        fetchStudents();
-    }
+  const rows = (result || []).map((item, index) => ({
+    num: index + 1,
+    id: item.registrationNumber,
+    name: item.name,
+    email: item.email,
+    section: item.section,
+  }));
 
   return (
-    <>
-    <StudentNavbar/>
-    <Container>
-        <Form onSubmit={formHandler}>
-            <Heading>Search Students</Heading>
-            <FormItemContainer>
-            <FormItem>
-                <Person/>
-                <select onChange={(e) => setDepartment(e.target.value)}>
-                    <option>Department</option>
-                    <option>C.S.E</option>
-                    <option>E.C.E</option>
-                    <option>I.T</option>
-                    <option>Civil</option>
-                    <option>Mechanical</option>
-                </select>
-            </FormItem>
-            <FormItem>
-                <CalendarToday/>
-                <select onChange={(e) => setYear(e.target.value)}>
-                    <option>Year</option>
-                    <option>1</option>
-                    <option>2</option>
-                    <option>3</option>
-                    <option>4</option>
-                </select>
-            </FormItem>
-            <FormItem>
-                <Class/>
-                <select onChange={(e) => setSection(e.target.value)}>
-                    <option>Section</option>
-                    <option>A</option>
-                    <option>B</option>
-                    <option>C</option>
-                    <option>D</option>
-                </select>
-            </FormItem>
-            </FormItemContainer>
-            <Button type="submit">
-                Search
-            </Button>
-        </Form>
-        <DataGrid rows={rows} columns={columns} pageSize={5} autoHeight/>
-    </Container>
-    </>
-  )
-}
+    <PageShell>
+      <StudentNavbar />
+      <Content>
+        <SectionTitle>Search Students</SectionTitle>
+        <Card style={{ marginBottom: 24 }}>
+          <form onSubmit={(e) => { e.preventDefault(); fetchStudents(); }}>
+            <FilterRow>
+              <FilterField>
+                <Label>Department</Label>
+                <Select value={department} onChange={(e) => setDepartment(e.target.value)}>
+                  <option value="">All Departments</option>
+                  {ADMIN_DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+                </Select>
+              </FilterField>
+              <FilterField>
+                <Label>Year</Label>
+                <Select value={year} onChange={(e) => setYear(e.target.value)}>
+                  <option value="">All Years</option>
+                  {ADMIN_YEARS.map((y) => <option key={y} value={y}>Year {y}</option>)}
+                </Select>
+              </FilterField>
+              <FilterField>
+                <Label>Section</Label>
+                <Select value={section} onChange={(e) => setSection(e.target.value)}>
+                  <option value="">All Sections</option>
+                  {ADMIN_SECTIONS.map((s) => <option key={s} value={s}>Section {s}</option>)}
+                </Select>
+              </FilterField>
+              <Btn type="submit" style={{ height: 44, alignSelf: 'flex-end' }}>Search</Btn>
+            </FilterRow>
+          </form>
+        </Card>
 
-export default StudentSearch
+        <GridWrap>
+          <DataGrid rows={rows} columns={columns} pageSize={10} autoHeight />
+        </GridWrap>
+      </Content>
+    </PageShell>
+  );
+};
+
+export default StudentSearch;

@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { DEPARTMENT_CODES, DEPARTMENTS, YEARS, SECTIONS } = require("../config/adminOptions");
 
 //utils
 const keys = require("../config/key");
@@ -22,6 +23,147 @@ const validateStudentUpdatePassword = require("../validation/studentUpdatePasswo
 const validateForgotPassword = require("../validation/forgotPassword");
 const validateOTP = require("../validation/otpValidation");
 const { markAttendance } = require("./facultyController");
+
+const getStudentRegistrationNumber = async (department, batchYear) => {
+  const shortDepartmentCodes = {
+    CSE: "CS",
+    ECE: "EC",
+    EEE: "EE",
+    ME: "ME",
+    CIVIL: "CV",
+    AIML: "AI",
+  };
+
+  const departmentCode = shortDepartmentCodes[department] || "CS";
+  const yearCode = String(batchYear).slice(-2);
+
+  const lastStudent = await Student.findOne({
+    department,
+    registrationNumber: {
+      $regex: `^2KA${yearCode}${departmentCode}`,
+    },
+  }).sort({ registrationNumber: -1 });
+
+  let sequence = 0;
+  if (lastStudent) {
+    const lastSequence = Number(
+      (lastStudent.registrationNumber.match(/(\d{3})$/) || ["0"])[0]
+    );
+    sequence = lastSequence + 1;
+  }
+
+  return `2KA${yearCode}${departmentCode}${String(sequence).padStart(3, "0")}`;
+};
+
+exports.studentRegister = async (req, res, next) => {
+  try {
+    const {
+      name,
+      email,
+      studentMobileNumber,
+      department,
+      section,
+      year,
+      fatherName,
+      fatherMobileNumber,
+      password,
+    } = req.body;
+
+    // Basic validation
+    if (
+      !name ||
+      !email ||
+      !studentMobileNumber ||
+      !department ||
+      !section ||
+      !year ||
+      !fatherName ||
+      !fatherMobileNumber ||
+      !password
+    ) {
+      return res.status(400).json({
+        message: "All fields are required",
+      });
+    }
+
+    // Validate department
+    if (!DEPARTMENTS.includes(department)) {
+      return res.status(400).json({
+        message: "Invalid department",
+      });
+    }
+
+    // Validate section
+    if (!SECTIONS.includes(section)) {
+      return res.status(400).json({
+        message: "Invalid section",
+      });
+    }
+
+    // Validate year
+    if (!YEARS.includes(String(year))) {
+      return res.status(400).json({
+        message: "Invalid year",
+      });
+    }
+
+    // Check whether email already exists
+    const existingStudent = await Student.findOne({ email });
+
+    if (existingStudent) {
+      return res.status(400).json({
+        message: "Student with this email already exists",
+      });
+    }
+
+    // Generate registration number in the format 2KA23CS001
+    const currentYear = new Date().getFullYear();
+    const registrationNumber = await getStudentRegistrationNumber(
+      department,
+      currentYear
+    );
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create student
+    const student = new Student({
+      name,
+      email,
+      password: hashedPassword,
+      year: Number(year),
+      department,
+      section,
+      registrationNumber,
+      fatherName,
+      studentMobileNumber,
+      fatherMobileNumber,
+      batch: String(currentYear),
+    });
+
+    // Assign subjects for the student's department and year
+    const subjects = await Subject.find({
+      department,
+      year: String(year),
+    });
+
+    student.subjects = subjects.map((subject) => subject._id);
+
+    await student.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Student registered successfully",
+      registrationNumber,
+    });
+  } catch (err) {
+    console.log("Error in student registration:", err.message);
+
+    return res.status(500).json({
+      message: "Error in student registration",
+    });
+  }
+};
 
 exports.studentLogin = async (req, res, next) => {
   const { errors, isValid } = validateStudentLoginInput(req.body);
@@ -185,12 +327,22 @@ exports.forgotPassword = async (req, res, next) => {
     const otp = generateOTP();
     student.otp = otp;
     await student.save();
-    await sendEmail(student.email, otp, "OTP");
+
+    const emailResult = await sendEmail(student.email, otp, "OTP");
+
+    if (emailResult?.skipped) {
+      return res.status(200).json({
+        message:
+          "Email service is not configured. OTP was generated for development testing.",
+        otp,
+      });
+    }
+
     res.status(200).json({ message: "Check your registered email for OTP" });
 
     const helper = async () => {
       student.otp = "";
-      await Student.save();
+      await student.save();
     };
 
     setTimeout(function () {

@@ -1,184 +1,118 @@
-import React,{useState,useEffect} from 'react'
-import { useDispatch,useSelector } from 'react-redux'
-import {useNavigate} from 'react-router-dom'
-import { useAlert } from 'react-alert'
-import styled from 'styled-components'
+import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { useAlert } from 'react-alert';
+import styled, { keyframes } from 'styled-components';
+import FacultyNavbar from '../../components/FacultyNavbar';
+import { Input, Btn, Card, FormGroup, Label, PageShell, SectionTitle } from '../../components/UI';
+import { facultyUpdate, facultyLogout } from '../../redux/actions/facultyAction';
+import { colors, font, radius } from '../../styles/theme';
 
-import {MailOutline,Phone} from '@material-ui/icons'
+const fadeUp = keyframes`
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 
-import FacultyNavbar from '../../components/FacultyNavbar'
-import {facultyUpdate,facultyLogout} from '../../redux/actions/facultyAction'
+const Content = styled.div`
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  animation: ${fadeUp} 0.3s ease both;
+  @media (max-width: 600px) { padding: 24px 16px; }
+`;
 
-const Container = styled.div`
-width:100vw;
-height:100vh;
-max-width:100%;
-display:flex;
-justify-content:center;
-align-items: center;
-background-color:rgb(231,231,231);
-`
+const AvatarRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+`;
 
-const ProfileBox = styled.div` 
-background-color:white;
-width:25vw;
-height:70vh;
-box-sizing:border-box;
-`
+const AvatarImg = styled.img`
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid ${colors.border};
+`;
 
-const ProfileHeader = styled.h1` 
-text-align:center;
-color:#0077b6;
-font:400 1.3vmax;
-padding:1.3vmax;
-border-bottom:1px solid #0077b6;
-width:50%;
-margin:auto;
-`
-
-const ProfileForm = styled.form` 
-display:flex;
-flex-direction: column;
-align-items:center;
-justify-content:space-evenly;
-margin: auto;
-padding: 2vmax;
-height: 70%;
->div{
-    display:flex;
-    align-items:center;
-    width:100%;
-}
-`
-const ProfileName = styled.div` 
->svg{
-    position:absolute;
-    transform:translateX(1vmax);
-    font-size:1.6vmax;
-}
-`
-const ProfileEmail = styled.div` 
->svg{
-    position:absolute;
-    transform:translateX(1vmax);
-    font-size:1.6vmax;
-}
-`
-const ProfilePhone = styled.div` 
->svg{
-    position:absolute;
-    transform:translateX(1vmax);
-    font-size:1.6vmax;
-}
-`
-
-const ProfileImage = styled.div` 
->img{
-    width:3vmax;
-    border-radius:100%;
-    margin:1vmax;
-}
->input{
-    display:flex;
-    padding:0%;
-}
-`
-const ProfileInput = styled.input` 
-padding:1vmax 4vmax;
-padding-right:1vmax;
-width:100%;
-box-sizing:border-box;
-border:1px solid #0077b6;
-border-radius:4px;
-font:300 0.9vmax;
-outline:none;
-`
-const ProfileButton = styled.button` 
-border:none;
-background-color: #0077b6;
-color:white;
-font:300 0.9vmax;
-width: 100%;
-  padding: 0.8vmax;
+const FileLabel = styled.label`
+  font-size: 13px;
+  color: ${colors.primary};
   cursor: pointer;
-  border-radius: 4px;
-  outline: none;
-  box-shadow:0 2px 5px rgba(0,0,0,0.219);
-`
+  font-family: ${font.family};
+  &:hover { text-decoration: underline; }
+  input { display: none; }
+`;
+
 const FacultyUpdateProfile = () => {
-    const alert = useAlert();
-    const navigate = useNavigate();
-    const dispatch = useDispatch();
-    const faculty = useSelector((store) => store.faculty)
+  const alert = useAlert();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const faculty = useSelector((s) => s.faculty);
 
-    const [email,setEmail] = useState(faculty.faculty.faculty.email);
-    const [mobile,setMobile] = useState(faculty.faculty.faculty.facultyMobileNumber);
-    const [avatar,setAvatar] = useState(faculty.faculty.faculty.avatar.url);
-    const [avatarPreview,setAvatarPreview] = useState(faculty.faculty.faculty.avatar.url);
+  if (!faculty.isAuthenticated) { navigate('/'); return null; }
 
-    const imageHandler = (e) => {
-       const reader = new FileReader();
-       reader.onload = () => {
-           if(reader.readyState === 2)
-           {
-               setAvatarPreview(reader.result);
-               setAvatar(reader.result)
-           }
-       }
+  const f = faculty.faculty.faculty;
+  const existingAvatar = f?.avatar?.url || '';
 
-       reader.readAsDataURL(e.target.files[0]);
-    }
+  const [email, setEmail] = useState(f?.email || '');
+  const [mobile, setMobile] = useState(f?.facultyMobileNumber || '');
+  const [avatar, setAvatar] = useState(existingAvatar);
+  const [avatarPreview, setAvatarPreview] = useState(existingAvatar);
 
-    const fileHandler = async(e) => {
-        e.preventDefault();
-        const myForm = new FormData();
-        myForm.append("facultyMobileNumber",mobile);
-        myForm.append("email",email);
-        myForm.append("avatar",avatar);
-        myForm.append("registrationNumber",faculty.faculty.faculty.registrationNumber);
-        dispatch(facultyUpdate(myForm));
-        alert.success("Profile Update Successful..Please Login Again");
-        dispatch(facultyLogout());
-        navigate('/');
-    }
+  const imageHandler = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { setAvatarPreview(reader.result); setAvatar(reader.result); };
+    reader.readAsDataURL(file);
+  };
 
-    return(
-        <>
-        {
-            faculty.isAuthenticated?(
-              <>
-               <FacultyNavbar/>
-        <Container>
-            <ProfileBox>
-                <ProfileHeader>
-                    Update Profile
-                </ProfileHeader>
-                <ProfileForm encType='multiform/form-data' onSubmit={fileHandler}>
-                    <ProfileEmail>
-                    <MailOutline/>
-                        <ProfileInput type="text" placeholder="Email" required name="email" value={email} onChange={(e) => setEmail(e.target.value)}/>
-                    </ProfileEmail>
-                    <ProfilePhone>
-                        <Phone/>
-                        <ProfileInput type="text" placeholder="Faculty Mobile" required name="facultyMobileNumber" value={mobile}  onChange={(e) => setMobile(e.target.value)}/>
-                    </ProfilePhone>
-                    <ProfileImage>
-                    <img src={avatarPreview} alt="Avatar Preview" />
-                    <input type="file" name="avatar" accept="image/*" onChange={imageHandler}/> 
-                    </ProfileImage>
-                    <ProfileButton type="submit">
-                        Update Profile
-                    </ProfileButton>
-                </ProfileForm>
-            </ProfileBox>
-        </Container>
-              </>
-            ):(
-                navigate('/')
-            )
-        }
-        </>
-    )
-}
+  const fileHandler = (e) => {
+    e.preventDefault();
+    const myForm = new FormData();
+    myForm.append('facultyMobileNumber', mobile);
+    myForm.append('email', email);
+    myForm.append('avatar', avatar);
+    myForm.append('registrationNumber', f.registrationNumber);
+    dispatch(facultyUpdate(myForm));
+    alert.success('Profile updated. Please login again.');
+    dispatch(facultyLogout());
+    navigate('/');
+  };
+
+  return (
+    <PageShell>
+      <FacultyNavbar />
+      <Content>
+        <SectionTitle>Update Profile</SectionTitle>
+        <Card>
+          <form encType="multipart/form-data" onSubmit={fileHandler}>
+            <AvatarRow>
+              {avatarPreview && <AvatarImg src={avatarPreview} alt="Avatar" />}
+              <FileLabel>
+                Change photo
+                <input type="file" name="avatar" accept="image/*" onChange={imageHandler} />
+              </FileLabel>
+            </AvatarRow>
+
+            <FormGroup style={{ marginBottom: 14 }}>
+              <Label>Email Address</Label>
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </FormGroup>
+            <FormGroup style={{ marginBottom: 20 }}>
+              <Label>Mobile Number</Label>
+              <Input type="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} required />
+            </FormGroup>
+
+            <Btn type="submit" $full>Save Changes</Btn>
+          </form>
+        </Card>
+      </Content>
+    </PageShell>
+  );
+};
 
 export default FacultyUpdateProfile;

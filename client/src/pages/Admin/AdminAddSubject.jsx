@@ -1,208 +1,92 @@
-import React, { useState, useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
-import {useAlert} from 'react-alert';
+import React, { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { useAlert } from 'react-alert';
+import styled, { keyframes } from 'styled-components';
+import AdminNavbar from '../../components/AdminNavbar';
+import { Input, Select, Btn, Card, FormGroup, Label, PageShell, SectionTitle } from '../../components/UI';
+import { adminAddSubject } from '../../redux/actions/adminAction';
+import { ADMIN_DEPARTMENTS, ADMIN_SEMESTERS, semesterToYear } from '../../config/adminOptions';
 
-import AdminNavbar from '../../components/AdminNavbar'
-import styled from 'styled-components'
-import {adminAddSubject} from '../../redux/actions/adminAction'
+const fadeUp = keyframes`
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 
-import {Class,Face,MailOutline,Phone,PhoneIphone,SupervisorAccount,CalendarToday,} from '@material-ui/icons'
+const Content = styled.div`
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  animation: ${fadeUp} 0.3s ease both;
 
-const Container = styled.div`
-width:100vw;
-height:100vh;
-max-width:100%;
-display:flex;
-justify-content:center;
-align-items: center;
-background-color:rgb(231,231,231);
-`
-
-const ProfileBox = styled.div` 
-background-color:white;
-width:25vw;
-height:70vh;
-box-sizing:border-box;
-`
-
-const ProfileHeader = styled.h1` 
-text-align:center;
-color:#0077b6;
-font:400 1.3vmax;
-padding:1.3vmax;
-border-bottom:1px solid #0077b6;
-width:50%;
-margin:auto;
-`
-
-const ProfileForm = styled.form` 
-display:flex;
-flex-direction: column;
-align-items:center;
-justify-content:space-evenly;
-margin: auto;
-padding: 2vmax;
-height: 70%;
->div{
-    display:flex;
-    align-items:center;
-    width:100%;
-}
-`
-const ProfileName = styled.div` 
->select{
-    padding:1vmax 4vmax;
-    padding-right:1vmax;
-    width:100%;
-    box-sizing:border-box;
-    border:1px solid rgba(0,0,0,0.267);
-    border-radius:4px;
-    font:300 0.9vmax;
-    outline:none;
-};
->svg{
-    position:absolute;
-    transform:translateX(1vmax);
-    font-size:1.6vmax;
-}
-`
-const ProfileEmail = styled.div` 
->svg{
-    position:absolute;
-    transform:translateX(1vmax);
-    font-size:1.6vmax;
-}
-`
-const ProfilePhone = styled.div` 
->svg{
-    position:absolute;
-    transform:translateX(1vmax);
-    font-size:1.6vmax;
-}
-`
-
-const ProfileImage = styled.div` 
->img{
-    width:3vmax;
-    border-radius:100%;
-    margin:1vmax;
-}
->input{
-    display:flex;
-    padding:0%;
-}
-`
-const ProfileInput = styled.input` 
-padding:1vmax 4vmax;
-padding-right:1vmax;
-width:100%;
-box-sizing:border-box;
-border:1px solid #0077b6;
-border-radius:4px;
-font:300 0.9vmax;
-outline:none;
-`
-const ProfileButton = styled.button` 
-border:none;
-background-color: #0077b6;
-color:white;
-font:300 0.9vmax;
-width: 100%;
-  padding: 0.8vmax;
-  cursor: pointer;
-  border-radius: 4px;
-  outline: none;
-  box-shadow:0 2px 5px rgba(0,0,0,0.219);
-`
+  @media (max-width: 600px) { padding: 24px 16px; }
+`;
 
 const AdminAddSubject = () => {
- 
-      const admin = useSelector((state) => state.admin);
-      const dispatch = useDispatch();
-      const navigate = useNavigate();
-      const alert = useAlert();
+  const admin = useSelector((s) => s.admin);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const alert = useAlert();
 
-    const [subjectName, setSubjectName] = useState('')
-    const [subjectCode, setSubjectCode] = useState('')
-    const [totalLectures, setTotalLectures] = useState('')
-    const [department, setDepartment] = useState('')
-    const [year, setYear] = useState('')
+  const [subjectName, setSubjectName] = useState('');
+  const [subjectCode, setSubjectCode] = useState('');
+  const [totalLectures, setTotalLectures] = useState('');
+  const [department, setDepartment] = useState('');
+  const [semester, setSemester] = useState('1');
 
-    const formHandler = (e) => {
-      e.preventDefault();
-      dispatch(adminAddSubject({
-          department,
-          year,
-          subjectCode,
-          subjectName,
-          totalLectures,
-      }));
+  if (!admin.isAuthenticated) { navigate('/admin/login'); return null; }
 
-      alert.success("Subject Registration Successful");
-      navigate('/admin/subjects')
+  const formHandler = (e) => {
+    e.preventDefault();
+    const backendYear = semesterToYear(semester);
+    dispatch(adminAddSubject({ department, year: backendYear, subjectCode, subjectName, totalLectures }));
+    alert.success('Subject added successfully');
+    navigate('/admin/subjects');
+  };
 
-    }
+  return (
+    <PageShell>
+      <AdminNavbar />
+      <Content>
+        <SectionTitle>Add Subject</SectionTitle>
+        <Card>
+          <form onSubmit={formHandler}>
+            <FormGroup style={{ marginBottom: 14 }}>
+              <Label>Subject Name</Label>
+              <Input placeholder="e.g. Data Structures" value={subjectName} onChange={(e) => setSubjectName(e.target.value)} required />
+            </FormGroup>
 
-    return(
-        <>
-        {
-            admin.isAuthenticated?(
-                <>
-                <AdminNavbar/>
-                <Container>
-                 <ProfileBox>
-                     <ProfileHeader>
-                         Add Subject
-                     </ProfileHeader>
-                     <ProfileForm encType='multiform/form-data' onSubmit={formHandler}>
-                         <ProfileEmail>
-                         <MailOutline/>
-                             <ProfileInput type="text" placeholder="Subject Name" required  value={subjectName} onChange={(e) => setSubjectName(e.target.value)}/>
-                         </ProfileEmail>
-                         <ProfilePhone>
-                             <Phone/>
-                             <ProfileInput type="text" placeholder="Subject Code" required  value={subjectCode} onChange={(e) => setSubjectCode(e.target.value)}/>
-                         </ProfilePhone>
-                         <ProfileName>
-                             <SupervisorAccount/>
-                             <ProfileInput type="text" placeholder="Total Lectures" required  value={totalLectures} onChange={(e) => setTotalLectures(e.target.value)}/>
-                         </ProfileName>
-                         <ProfileName>
-                             <Class/>
-                             <select onChange={(e) => setDepartment(e.target.value)}>
-                                 <option>Department</option>
-                                 <option>C.S.E</option>
-                                 <option>I.T</option>
-                                 <option>Mechanical</option>
-                                 <option>Civil</option>
-                                 <option>E.C.E</option>
-                             </select>
-                         </ProfileName>
-                         <ProfileName>
-                             <CalendarToday/>
-                             <select onChange={(e) => setYear(e.target.value)}>
-                                 <option>Year</option>
-                                 <option>1</option>
-                                 <option>2</option>
-                                 <option>3</option>
-                                 <option>4</option>
-                             </select>
-                         </ProfileName>
-                         <ProfileButton type="submit">
-                             Add Subject
-                         </ProfileButton>
-                     </ProfileForm>
-                 </ProfileBox>
-             </Container>
-                </>
-            ):(
-                navigate('/admin/login')
-            )
-        }
-        </>
-          
-    )
-}
+            <FormGroup style={{ marginBottom: 14 }}>
+              <Label>Subject Code</Label>
+              <Input placeholder="e.g. CS301" value={subjectCode} onChange={(e) => setSubjectCode(e.target.value)} required />
+            </FormGroup>
+
+            <FormGroup style={{ marginBottom: 14 }}>
+              <Label>Total Lectures</Label>
+              <Input type="number" placeholder="e.g. 40" value={totalLectures} onChange={(e) => setTotalLectures(e.target.value)} required />
+            </FormGroup>
+
+            <FormGroup style={{ marginBottom: 14 }}>
+              <Label>Department</Label>
+              <Select value={department} onChange={(e) => setDepartment(e.target.value)} required>
+                <option value="">Select department</option>
+                {ADMIN_DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+              </Select>
+            </FormGroup>
+
+            <FormGroup style={{ marginBottom: 20 }}>
+              <Label>Semester</Label>
+              <Select value={semester} onChange={(e) => setSemester(e.target.value)} required>
+                {ADMIN_SEMESTERS.map((s) => <option key={s} value={s}>Semester {s}</option>)}
+              </Select>
+            </FormGroup>
+
+            <Btn type="submit" $full>Add Subject</Btn>
+          </form>
+        </Card>
+      </Content>
+    </PageShell>
+  );
+};
 
 export default AdminAddSubject;

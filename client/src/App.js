@@ -4,6 +4,9 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import jwt_decode from "jwt-decode";
 import authToken from "./redux/utils/authToken";
 import store from "./redux/store";
+import Register from './pages/Register'
+import StudentRegister from "./pages/StudentRegister";
+import FacultyRegister from "./pages/FacultyRegister";
 
 import { setFacultyUser, facultyLogout } from "./redux/actions/facultyAction";
 import {
@@ -84,6 +87,17 @@ function App() {
       <Router>
         <Routes>
           <Route exact path="/" element={<FacultyStudentLogin />} />
+          <Route exact path="/register" element={<Register />} />
+          <Route
+            exact
+            path="/register/student"
+            element={<StudentRegister />}
+          />
+          <Route
+            exact
+            path="/register/faculty"
+            element={<FacultyRegister />}
+          />
           <Route exact path="/admin/login" element={<AdminLogin />} />
           <Route exact path="/faculty" element={<FacultyDashboard />} />
           <Route exact path="/home" element={<StudentDashboard />} />

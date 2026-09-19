@@ -1,255 +1,168 @@
-import React,{useState,useEffect} from 'react'
-import {useSelector,useDispatch} from 'react-redux'
-import {DataGrid} from '@material-ui/data-grid'
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { useAlert } from 'react-alert';
+import { DataGrid } from '@material-ui/data-grid';
+import styled, { keyframes } from 'styled-components';
+import FacultyNavbar from '../../components/FacultyNavbar';
+import { Select, Btn, Card, FormGroup, Label, PageShell, SectionTitle } from '../../components/UI';
+import { fetchStudents, markAttendance } from '../../redux/actions/facultyAction';
+import { ADMIN_SEMESTERS, ADMIN_SECTIONS, semesterToYear } from '../../config/adminOptions';
+import { colors, font, radius } from '../../styles/theme';
 
-import styled from 'styled-components'
-import FacultyNavbar from '../../components/FacultyNavbar'
+const fadeUp = keyframes`
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 
-import {Person,CalendarToday,Search,Class} from '@material-ui/icons'
-import {fetchStudents,markAttendance} from '../../redux/actions/facultyAction'
-import { useNavigate } from 'react-router-dom'
-import {useAlert} from 'react-alert'
+const Content = styled.div`
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  animation: ${fadeUp} 0.3s ease both;
+  @media (max-width: 600px) { padding: 24px 16px; }
+`;
 
-const Container = styled.div` 
-width:100%;
-box-sizing:border-box;
-background-color: rgb(255, 255, 255);
-display:flex;
-flex-direction:column;
-border-left: 1px solid rgba(0, 0, 0, 0.158);
-height: 100vh;
-`
-const Heading = styled.h1` 
-font:400 2rem;
-padding:0.5vmax; 
-box-sizing:border-box;
-color:#0077b6;
-transition: all 0.5s;
-margin: 2rem;
-text-align: center;
-border-bottom:1px solid #0077b6;
-`
-const Form = styled.form` 
-width:100%;
-display: flex;
-flex-direction: column;
-align-items: center;
-margin: auto;
-padding: 3vmax;
-background-color: white;
-`
+const FilterRow = styled.div`
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 0;
+`;
 
-const FormItemContainer  = styled.div` 
-display:flex;
-justify-content:center;
-width: 100%;
-`
-const FormItem = styled.div` 
-display: flex;
-align-items: center;
-margin: 2rem;
->input{
-    padding:1vmax 4vmax;
-    padding-right:1vmax;
-    width: 100%;
-    box-sizing: border-box;
-    border: 1px solid rgba(0, 0, 0, 0.267);
-    border-radius: 4px;
-    font: 300 0.9vmax;
-    outline: none;
-}
->select{
-    padding:1vmax 4vmax;
-    padding-right:1vmax;
-    width: 100%;
-    box-sizing: border-box;
-    border: 1px solid rgba(0, 0, 0, 0.267);
-    border-radius: 4px;
-    font: 300 0.9vmax;
-    outline: none;
-}
->svg{
-    position:absolute;
-    transform:translateX(1vmax);
-    font-size:1.6vmax; 
-    color:rgba(0,0,0,0.623)
-}
-`
+const FilterField = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 150px;
+  flex: 1;
+`;
 
-const Button = styled.button` 
-    border-radius: 10px;
-    border:none;
-    background-color: #0077b6;
-    font: 400 1vmax;
-    color: white;
-    text-decoration: none;
-    padding: 0.5vmax;
-    width: 30%;
-    margin: 4vmax;
-    text-align: center;
-    cursor:pointer;
-`
+const GridWrap = styled.div`
+  background: ${colors.white};
+  border: 1px solid ${colors.border};
+  border-radius: ${radius.lg};
+  overflow: hidden;
+  margin-top: 24px;
+`;
 
-const SubmitContainer = styled.div`
-display:flex;
-align-itmes:center;
-justify-content:center;
-`
+const SubjectRow = styled.div`
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid ${colors.border};
+`;
 
+const columns = [
+  { field: 'id', headerName: 'No.', flex: 0.2 },
+  { field: 'code', headerName: 'Reg. Number', flex: 0.5 },
+  { field: 'name', headerName: 'Name', flex: 0.6 },
+  { field: 'email', headerName: 'Email', flex: 0.5 },
+];
 
 const FacultyAttendance = () => {
-    const store = useSelector((store) => store);
-    const faculty = useSelector((store) => store.faculty);
-    const navigate = useNavigate();
-    const alert = useAlert();
-    const dispatch = useDispatch();
+  const store = useSelector((s) => s);
+  const faculty = useSelector((s) => s.faculty);
+  const navigate = useNavigate();
+  const alert = useAlert();
+  const dispatch = useDispatch();
 
-    const department = faculty.faculty.faculty.department;
-    const [year, setYear] = useState("")
-    const [section, setSection] = useState("")
-    const [subjectCode, setSubjectCode] = useState("")
-    const [checkedValue, setCheckedValue] = useState([]);
-    const [students,setStudents] = useState([]);
-    const [error, setError] = useState({})
-    const [flag, setFlag] = useState(true)
-    const [isLoading, setIsLoading] = useState(false)
-    const [isLoading2, setIsLoading2] = useState(false)
+  const department = faculty?.faculty?.faculty?.department;
+  const [semester, setSemester] = useState('1');
+  const [section, setSection] = useState('');
+  const [subjectCode, setSubjectCode] = useState('');
+  const [checkedValue, setCheckedValue] = useState([]);
 
-    const columns = [
-        {field:"_id",headerName:"No.",flex:0.3},
-        {field:"code",headerName:"Registration Number",flex:0.1},
-        {field:"name",headerName:"Name",flex:0.5},
-        {field:"email",headerName:"Email",flex:0.3},
-    ]
+  if (!faculty.isAuthenticated) { navigate('/'); return null; }
 
-    const rows = [];
-    faculty.fetchedStudents.forEach((item,index) => {
-        rows.push({
-            id:index + 1,
-            _id:item._id,
-            code:item.registrationNumber,
-            name:item.name,
-            email:item.email
-        })
-    })
+  const rows = faculty.fetchedStudents.map((item, index) => ({
+    id: index + 1,
+    _id: item._id,
+    code: item.registrationNumber,
+    name: item.name,
+    email: item.email,
+  }));
 
-    useEffect(() => {
-        if (store.error) {
-            setError(store.error)
-        }
-    }, [store.error])
+  const getStudents = (e) => {
+    e.preventDefault();
+    dispatch(fetchStudents(department, semesterToYear(semester), section));
+  };
 
-
-    const getStudents = (e) => {
-        e.preventDefault();
-        setIsLoading(true);
-        dispatch(fetchStudents(department,year,section))
-    }
-
-    const setAttendance = (e) => {
-        e.preventDefault();
-        console.log(checkedValue);
-        dispatch(markAttendance(checkedValue,subjectCode,department,year,section))
-        setCheckedValue([])
-        alert.success("Attendance Marked!")
-    }
-
+  const setAttendance = (e) => {
+    e.preventDefault();
+    dispatch(markAttendance(checkedValue, subjectCode, department, semesterToYear(semester), section));
+    setCheckedValue([]);
+    alert.success('Attendance marked!');
+  };
 
   return (
-    <>
-    {
-        faculty.isAuthenticated?(
-            <>
-            <FacultyNavbar/>
-    <Container>
-        <Form>
-            <Heading>Mark Attendance</Heading>
-            <FormItemContainer>
-            <FormItem>
-            <CalendarToday/>
-                <select required onChange={(e) => setYear(e.target.value)}>
-                    <option>Year</option>
-                    <option>1</option>
-                    <option>2</option>
-                    <option>3</option>
-                    <option>4</option>
-                </select>
-            </FormItem>
-            <FormItem>
-                <Person/>
-                <select required onChange={(e) => setSection(e.target.value)}>
-                    <option>Section</option>
-                    <option>A</option>
-                    <option>B</option>
-                    <option>C</option>
-                    <option>D</option>
-                </select>
-            </FormItem>
+    <PageShell>
+      <FacultyNavbar />
+      <Content>
+        <SectionTitle>Mark Attendance</SectionTitle>
+        <Card>
+          <FilterRow>
+            <FilterField>
+              <Label>Semester</Label>
+              <Select value={semester} onChange={(e) => setSemester(e.target.value)} required>
+                {ADMIN_SEMESTERS.map((s) => (
+                  <option key={s} value={s}>Semester {s}</option>
+                ))}
+              </Select>
+            </FilterField>
+            <FilterField>
+              <Label>Section</Label>
+              <Select value={section} onChange={(e) => setSection(e.target.value)} required>
+                <option value="">Select section</option>
+                {ADMIN_SECTIONS.map((s) => (
+                  <option key={s} value={s}>Section {s}</option>
+                ))}
+              </Select>
+            </FilterField>
+            <Btn onClick={getStudents} style={{ height: 44, alignSelf: 'flex-end' }}>
+              Search Students
+            </Btn>
+          </FilterRow>
 
-            </FormItemContainer>
-            <FormItemContainer>
-        
-            {
-                !isLoading &&  <Button type="submit" onClick={getStudents}>
-                Search
-            </Button>
-            }
-            </FormItemContainer>
+          {faculty.allSubjectCodeList.length > 0 && (
+            <SubjectRow>
+              <FilterField>
+                <Label>Subject</Label>
+                <Select value={subjectCode} onChange={(e) => setSubjectCode(e.target.value)} required>
+                  <option value="">Select subject</option>
+                  {faculty.allSubjectCodeList.map((code) => (
+                    <option key={code} value={code}>{code}</option>
+                  ))}
+                </Select>
+              </FilterField>
+              <Btn onClick={setAttendance} style={{ height: 44, alignSelf: 'flex-end' }}>
+                Submit Attendance
+              </Btn>
+            </SubjectRow>
+          )}
+        </Card>
 
-          <FormItemContainer>
-            
-            
-                
-                {
-                    faculty.allSubjectCodeList.length > 0 && (
-                        <FormItem>
-                        <Class/>
-                        <select required onChange={(e) => setSubjectCode(e.target.value)}>
-                        <option>Subject</option>
-                        {
-                            faculty.allSubjectCodeList.map(subjectCodeName => 
-                                <option>{subjectCodeName}</option>
-                            )
-                        }
-                        </select>
-                        </FormItem>
-                    ) 
-                }
-            
-            
-          </FormItemContainer>
-           
-           
-        </Form>
-        <DataGrid checkboxSelection onSelectionModelChange = {(ids) => {
-            // setIsLoading2(true);
-             setCheckedValue([]);
-             const selectedRows = new Set(ids);
-             const selectedStudents = rows.filter((row) => selectedRows.has(row.id) )
-            // console.log(selectedStudents);
-             const checkedArr = [];
-             selectedStudents.forEach((item,index) => {
-                 checkedArr.push(item._id);
-             })
-             setCheckedValue(checkedArr);
-             //console.log(checkedValue);
-        }} rows={rows} columns={columns} pageSize={5} autoHeight/>
-        <SubmitContainer>
-           <Button type="submit" onClick={setAttendance}>
-                Submit
-            </Button>
-        </SubmitContainer>
-        
-           
-    </Container>
-            </>
-        ):(
-            navigate('/')
-        )
-    }
-    
-    </>
-  )
-}
+        <GridWrap>
+          <DataGrid
+            checkboxSelection
+            onSelectionModelChange={(ids) => {
+              const selected = new Set(ids);
+              const selectedStudents = rows.filter((row) => selected.has(row.id));
+              setCheckedValue(selectedStudents.map((item) => item._id));
+            }}
+            rows={rows}
+            columns={columns}
+            pageSize={10}
+            autoHeight
+          />
+        </GridWrap>
+      </Content>
+    </PageShell>
+  );
+};
 
-export default FacultyAttendance
+export default FacultyAttendance;

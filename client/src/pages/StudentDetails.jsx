@@ -1,137 +1,137 @@
-import React,{useState,useEffect} from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import StudentNavbar from '../components/StudentNavbar'
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import styled, { keyframes } from 'styled-components';
+import StudentNavbar from '../components/StudentNavbar';
+import { Avatar, InfoRow, InfoLabel, InfoValue, Btn, PageShell, SectionTitle } from '../components/UI';
+import { getStudentByRegNum } from '../redux/actions/studentAction';
+import { colors, font, radius, shadow, transition } from '../styles/theme';
 
-import styled from 'styled-components'
-import { Link,useParams,useNavigate } from 'react-router-dom'
+const fadeUp = keyframes`
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 
-import {getStudentByRegNum} from '../redux/actions/studentAction'
+const Content = styled.div`
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  animation: ${fadeUp} 0.3s ease both;
+  @media (max-width: 600px) { padding: 24px 16px; }
+`;
 
-const Container = styled.div`
-display:flex;
-height:100vh;
-width:100vw;
-max-width:100%;
-background-color:white;
-`
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
+`;
 
-const Header = styled.div` 
-display:flex;
-height:100vh;
-width:100vw;
-max-width:100%;
-flex-direction: column;
-justify-content: center;
-align-items: center;
->h1{
-    font:500 2.2vmax;
-    color:#0077b6;
-    transform:translateX(-10vmax) translateY(-2vmax)
-}
->img{
-    width:20vmax;
-    object-fit:contain;
-    border-radius:100%;
-    transition:all 0.5s;
-}
->a{
-    border-radius: 10px;
-    background-color: #0077b6;
-    font: 400 1vmax;
-    color: white;
-    text-decoration: none;
-    padding: 0.5vmax;
-    width: 30%;
-    margin: 4vmax;
-    text-align: center;
-    transition: all 0.5s;
-}
-`
+const ProfileCard = styled.div`
+  background: ${colors.white};
+  border: 1px solid ${colors.border};
+  border-radius: ${radius.lg};
+  box-shadow: ${shadow.card};
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  transition: ${transition.base};
+  &:hover { box-shadow: ${shadow.cardHover}; transform: translateY(-2px); }
+`;
 
-const ProfileInfo = styled.div` 
-display:flex;
-height:100vh;
-width:100vw;
-max-width:100%;
-flex-direction: column;
-justify-content: center;
-align-items: center;
-`
+const Name = styled.h2`
+  font-size: 16px;
+  font-weight: 600;
+  color: ${colors.textPrimary};
+  font-family: ${font.family};
+`;
 
-const ProfileInfoItem = styled.div` 
-justify-content:space-evenly;
-align-items:center;
-padding:1.5vmax;
-box-sizing:border-box;
-border-bottom:0.5px solid #0077b6;
->h4{
-    color:#0077b6;
-    font:400 1.2vmax;
-    text-align:center;
-};
->p{
-    color:black;
-    font:400 1vmax;
-    margin:0.2vmax;
-}
-`
+const RegNum = styled.span`
+  font-size: 12px;
+  color: ${colors.textMuted};
+  font-family: 'Courier New', monospace;
+  background: ${colors.bgPage};
+  padding: 3px 10px;
+  border-radius: ${radius.full};
+  border: 1px solid ${colors.border};
+`;
 
+const InfoCard = styled.div`
+  background: ${colors.white};
+  border: 1px solid ${colors.border};
+  border-radius: ${radius.lg};
+  box-shadow: ${shadow.card};
+  padding: 24px;
+`;
 
 const StudentDetails = () => {
-    const student = useSelector((store) => store.student);
-    const navigate = useNavigate();
-    const dispatch = useDispatch();
-    const params = useParams();
+  const student = useSelector((s) => s.student);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const params = useParams();
+  const [registrationNumber, setRegistrationNumber] = useState('');
 
-    const [registrationNumber, setRegistrationNumber] = useState("")
+  useEffect(() => {
+    setRegistrationNumber(params.registrationNumber);
+    dispatch(getStudentByRegNum(registrationNumber));
+  }, [registrationNumber]);
 
-    useEffect(() => {
-        setRegistrationNumber(params.registrationNumber);
-        console.log(registrationNumber);
-        dispatch(getStudentByRegNum(registrationNumber));
-    },[registrationNumber])
+  if (!student.isAuthenticated || registrationNumber === student?.student?.student?.registrationNumber) {
+    navigate('/');
+    return null;
+  }
+
+  const peer = student.regNumStudent;
+  const avatarUrl = peer?.avatar?.url;
+  const firstLetter = peer?.name ? peer.name.charAt(0) : 'S';
 
   return (
-    <>
-    {
-        !student.isAuthenticated || registrationNumber === student.student.student.registrationNumber ?(
-            navigate('/')
-        ):(
-            <>
-            <StudentNavbar/>
-    <Container>
-      <Header>
-          <h1>Student Profile</h1>
-          <img src={student.regNumStudent?.avatar?.url} />
-          <h3>{student.regNumStudent?.name}</h3>
-          <h3>{registrationNumber}</h3>
-          <Link to={`/chat/${student.student.student.registrationNumber}.${registrationNumber}`}>Message</Link>
-      </Header>
-      <ProfileInfo>
-          <ProfileInfoItem>
-              <h4>Email</h4>
-              <p>{student.regNumStudent?.email}</p>
-          </ProfileInfoItem>
-          <ProfileInfoItem>
-              <h4>Department</h4>
-              <p>{student.regNumStudent?.department}</p>
-          </ProfileInfoItem>
-          <ProfileInfoItem>
-              <h4>Year</h4>
-              <p>{student.regNumStudent?.year}</p>
-          </ProfileInfoItem>
-          <ProfileInfoItem>
-              <h4>Section</h4>
-              <p>{student.regNumStudent?.section}</p>
-          </ProfileInfoItem>
-      </ProfileInfo>
-    </Container>
-            </>
-        )
-    }
-    
-    </>
-  )
-}
+    <PageShell>
+      <StudentNavbar />
+      <Content>
+        <SectionTitle>Student Profile</SectionTitle>
+        <Grid>
+          <ProfileCard>
+            <Avatar $size="72px">
+              {avatarUrl ? <img src={avatarUrl} alt={firstLetter} /> : firstLetter}
+            </Avatar>
+            <Name>{peer?.name}</Name>
+            <RegNum>{registrationNumber}</RegNum>
+            <Btn
+              $full
+              as={Link}
+              to={`/chat/${student.student.student.registrationNumber}.${registrationNumber}`}
+              style={{ marginTop: 8 }}
+            >
+              Send Message
+            </Btn>
+          </ProfileCard>
 
-export default StudentDetails
+          <InfoCard>
+            <InfoRow>
+              <InfoLabel>Email</InfoLabel>
+              <InfoValue>{peer?.email}</InfoValue>
+            </InfoRow>
+            <InfoRow>
+              <InfoLabel>Department</InfoLabel>
+              <InfoValue>{peer?.department}</InfoValue>
+            </InfoRow>
+            <InfoRow>
+              <InfoLabel>Year</InfoLabel>
+              <InfoValue>{peer?.year}</InfoValue>
+            </InfoRow>
+            <InfoRow>
+              <InfoLabel>Section</InfoLabel>
+              <InfoValue>{peer?.section}</InfoValue>
+            </InfoRow>
+          </InfoCard>
+        </Grid>
+      </Content>
+    </PageShell>
+  );
+};
+
+export default StudentDetails;
