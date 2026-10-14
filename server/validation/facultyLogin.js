@@ -4,13 +4,18 @@ const isEmpty = require("./is-empty");
 const validateFacultyLoginInput = (data) => {
   let errors = {};
   data.registrationNumber = !isEmpty(data.registrationNumber)
-    ? data.registrationNumber
+    ? data.registrationNumber.trim().toUpperCase()
     : "";
   data.password = !isEmpty(data.password) ? data.password : "";
 
-  if (!Validator.isLength(data.registrationNumber, { min: 12, max: 12 })) {
+  const isExistingFormat = /^FAC\d{9}$/.test(data.registrationNumber);
+  const isDepartmentFormat = /^FAC\d{4}(?:CSE|ECE|EEE|ME|CIVIL|AIML)\d{3}$/.test(
+    data.registrationNumber
+  );
+
+  if (!isExistingFormat && !isDepartmentFormat) {
     errors.registrationNumber =
-      "Registration number must be 12 characters long";
+      "Enter a valid faculty registration number";
   }
 
   if (Validator.isEmpty(data.registrationNumber)) {

@@ -12,6 +12,32 @@ const initialState = {
   allFaculty: [],
   allStudent: [],
   allSubject: [],
+  results: {
+    records: [],
+    summary: null,
+    exams: [],
+    student: null,
+    subject: null,
+    loading: false,
+    error: null,
+  },
+  timetable: {
+    entries: [],
+    loading: false,
+    error: null,
+  },
+  fees: {
+    records: [],
+    summary: null,
+    student: null,
+    loading: false,
+    error: null,
+  },
+  reports: {
+    data: null,
+    loading: false,
+    error: null,
+  },
 };
 
 const adminReducer = (state = initialState, action) => {
@@ -70,6 +96,86 @@ const adminReducer = (state = initialState, action) => {
         allSubject: action.payload,
       };
     }
+    case "ADMIN_RESULTS_REQUEST":
+      return {
+        ...state,
+        results: { ...state.results, loading: true, error: null },
+      };
+    case "ADMIN_RESULTS_SUCCESS":
+      return {
+        ...state,
+        results: {
+          records: Array.isArray(action.payload?.results)
+            ? action.payload.results
+            : [],
+          summary: action.payload?.summary || null,
+          exams: Array.isArray(action.payload?.exams) ? action.payload.exams : [],
+          student: action.payload?.student || null,
+          subject: action.payload?.subject || null,
+          loading: false,
+          error: null,
+        },
+      };
+    case "ADMIN_RESULTS_FAILURE":
+      return {
+        ...state,
+        results: { ...state.results, loading: false, error: action.payload },
+      };
+    case "ADMIN_TIMETABLE_REQUEST":
+      return {
+        ...state,
+        timetable: { ...state.timetable, loading: true, error: null },
+      };
+    case "ADMIN_TIMETABLE_SUCCESS":
+      return {
+        ...state,
+        timetable: {
+          entries: Array.isArray(action.payload) ? action.payload : [],
+          loading: false,
+          error: null,
+        },
+      };
+    case "ADMIN_TIMETABLE_FAILURE":
+      return {
+        ...state,
+        timetable: { ...state.timetable, loading: false, error: action.payload },
+      };
+    case "ADMIN_FEES_REQUEST":
+      return {
+        ...state,
+        fees: { ...state.fees, loading: true, error: null },
+      };
+    case "ADMIN_FEES_SUCCESS":
+      return {
+        ...state,
+        fees: {
+          records: Array.isArray(action.payload?.result) ? action.payload.result : [],
+          summary: action.payload?.summary || null,
+          student: action.payload?.student || null,
+          loading: false,
+          error: null,
+        },
+      };
+    case "ADMIN_FEES_FAILURE":
+      return {
+        ...state,
+        fees: { ...state.fees, loading: false, error: action.payload },
+      };
+    case "ADMIN_REPORTS_REQUEST":
+      return {
+        ...state,
+        reports: { ...state.reports, loading: true, error: null },
+      };
+    case "ADMIN_REPORTS_SUCCESS":
+      return {
+        ...state,
+        reports: { data: action.payload, loading: false, error: null },
+      };
+    case "ADMIN_REPORTS_FAILURE":
+      return {
+        ...state,
+        reports: { ...state.reports, loading: false, error: action.payload },
+      };
     default:
       return state;
   }

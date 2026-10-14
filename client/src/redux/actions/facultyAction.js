@@ -269,23 +269,15 @@ export const facultyUpdate = (
 /* =========================================================
    MARK ATTENDANCE
 ========================================================= */
-export const markAttendance = (
-  selectedStudents,
-  subjectCode,
-  department,
-  year,
-  section
-) => {
+export const markAttendance = (assignmentId, selectedStudents, sessionDate) => {
   return async (dispatch) => {
     try {
       await axios.post(
         "/api/faculty/markAttendance",
         {
+          assignmentId,
           selectedStudents,
-          subjectCode,
-          department,
-          year,
-          section,
+          sessionDate,
         }
       );
 

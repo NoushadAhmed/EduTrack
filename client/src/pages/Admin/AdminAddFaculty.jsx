@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAlert } from 'react-alert';
 import styled, { keyframes } from 'styled-components';
 import AdminNavbar from '../../components/AdminNavbar';
+import AdminBackButton from '../../components/AdminBackButton';
 import { Input, Select, Btn, Card, FormGroup, Label, PageShell, SectionTitle } from '../../components/UI';
 import { adminAddFaculty } from '../../redux/actions/adminAction';
 import { ADMIN_DEPARTMENTS } from '../../config/adminOptions';
@@ -47,6 +48,7 @@ const AdminAddFaculty = () => {
     <PageShell>
       <AdminNavbar />
       <Content>
+        <AdminBackButton />
         <SectionTitle>Add Faculty</SectionTitle>
         <Card>
           <form onSubmit={formHandler}>

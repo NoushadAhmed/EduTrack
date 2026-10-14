@@ -132,12 +132,13 @@ export const studentUpdatePassword = (passwordData) => {
         "/api/student/updatePassword",
         passwordData
       );
-      //alert("Password Updated Successfully");
+      return data;
     } catch (err) {
       dispatch({
         type: SET_ERRORS_HELPER,
-        payload: err.response.data,
+        payload: err.response ? err.response.data : { message: "Password update failed" },
       });
+      throw err;
     }
   };
 };
@@ -271,8 +272,10 @@ export const studentUpdate = (updatedData) => {
         updatedData,
         config
       );
+      return data;
     } catch (err) {
       console.log("Error in updating student info", err.message);
+      throw err;
     }
   };
 };

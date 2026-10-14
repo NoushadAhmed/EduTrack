@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAlert } from 'react-alert';
 import styled, { keyframes } from 'styled-components';
 import FacultyNavbar from '../../components/FacultyNavbar';
+import FacultyBackButton from '../../components/FacultyBackButton';
 import { Input, Btn, Card, FormGroup, Label, PageShell, SectionTitle } from '../../components/UI';
 import { facultyUpdatePassword, facultyLogout } from '../../redux/actions/facultyAction';
 
@@ -49,6 +50,7 @@ const FacultyUpdatePassword = () => {
     <PageShell>
       <FacultyNavbar />
       <Content>
+        <FacultyBackButton />
         <SectionTitle>Change Password</SectionTitle>
         <Card>
           <form onSubmit={formHandler}>

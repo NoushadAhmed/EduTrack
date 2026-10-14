@@ -369,7 +369,7 @@ const FacultyStudentLogin = () => {
                 <FieldLabel>Faculty ID</FieldLabel>
                 <Input
                   type="text"
-                  placeholder="e.g. FAC2026010000"
+                  placeholder="e.g. FAC2026CSE001"
                   value={facultyRegNum}
                   onChange={(e) => setFacultyRegNum(e.target.value)}
                   required

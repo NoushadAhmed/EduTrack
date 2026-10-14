@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import io from 'socket.io-client';
 import styled, { keyframes } from 'styled-components';
 import StudentNavbar from '../components/StudentNavbar';
+import StudentBackButton from '../components/StudentBackButton';
 import Message from '../components/Message';
 import { sendMessage, getPrivateConversation, getPrivateConversation2 } from '../redux/actions/studentAction';
 import { colors, font, radius, shadow } from '../styles/theme';
@@ -20,6 +21,17 @@ const Page = styled.div`
   height: 100vh;
   background: ${colors.bgPage};
   font-family: ${font.family};
+  html[data-student-portal='true'] & {
+    box-sizing: border-box;
+    height: 100vh;
+    padding-top: 56px;
+    padding-left: var(--student-sidebar-width, 240px);
+    transition: padding-left 0.2s ease;
+  }
+
+  @media (max-width: 900px) {
+    html[data-student-portal='true'] & { padding-left: 0; }
+  }
 `;
 
 const ChatArea = styled.div`
@@ -42,6 +54,11 @@ const Window = styled.div`
   display: flex;
   flex-direction: column;
   animation: ${fadeIn} 0.25s ease both;
+`;
+
+const ChatHeader = styled.div`
+  padding: 14px 18px 0;
+  border-bottom: 1px solid ${colors.border};
 `;
 
 const Messages = styled.div`
@@ -99,8 +116,6 @@ function swap(input, a, b) {
   const temp = input[a]; input[a] = input[b]; input[b] = temp;
 }
 
-let socket;
-
 const Chat = () => {
   const student = useSelector((s) => s.student);
   const navigate = useNavigate();
@@ -113,38 +128,45 @@ const Chat = () => {
   const [receiverRegistrationNumber, setReceiverRegistrationNumber] = useState('');
   const [message, setMessage] = useState('');
   const [messageArray, setMessageArray] = useState([]);
+  const socketRef = useRef(null);
 
   const socketUrl = 'http://localhost:3000';
 
   useEffect(() => {
     const temp = params.room;
-    socket = io(socketUrl);
     const tempArr = temp.split('.');
+    if (tempArr.length !== 2 || !tempArr[0] || !tempArr[1]) {
+      navigate('/student/chatList', { replace: true });
+      return;
+    }
     setReceiverRegistrationNumber(tempArr[1]);
     setRoom1(temp);
     swap(tempArr, 0, 1);
     setRoom2(tempArr[0] + '.' + tempArr[1]);
-  }, [socketUrl, params.room]);
+  }, [navigate, params.room]);
 
   useEffect(() => {
+    if (!room1 || !room2) return undefined;
     dispatch(getPrivateConversation(room1));
     dispatch(getPrivateConversation2(room2));
-    socket = io(socketUrl);
-    socket.emit('join room', { room1, room2 });
+    const socket = io(socketUrl, {
+      auth: { token: localStorage.getItem('studentToken') },
+    });
+    socketRef.current = socket;
+    socket.on('connect', () => socket.emit('join room', { room1, room2 }));
     socket.on('new Message', (data) => { setMessageArray((prev) => [...prev, data]); });
-    return () => { socket.disconnect(); socket.off(); };
-  }, [room1, room2]);
-
-  useEffect(() => {
-    socket.on('new Message', (data) => { setMessageArray((prev) => [...prev, data]); });
-  }, [messageArray]);
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [dispatch, room1, room2]);
 
   if (!student.isAuthenticated) { navigate('/'); return null; }
 
   const formHandler = (e) => {
     e.preventDefault();
     if (message.trim().length === 0) { alert.error('Message cannot be empty'); return; }
-    socket.emit('private message', { sender: student.student.student.name, message, room: room1 });
+    socketRef.current?.emit('private message', { message, room: room1 });
     const messageObj = {
       roomId: room1,
       senderName: student.student.student.name,
@@ -162,12 +184,17 @@ const Chat = () => {
       <StudentNavbar />
       <ChatArea>
         <Window>
+          <ChatHeader><StudentBackButton /></ChatHeader>
           <Messages>
             {student.privateChat.map((obj, index) => (
               <Message key={index} message={obj} own={obj.senderRegistrationNumber === student.student.student.registrationNumber} />
             ))}
             {messageArray.map((obj, index) => (
-              <Message key={index} message={obj} own />
+              <Message
+                key={index}
+                message={obj}
+                own={obj.senderRegistrationNumber === student.student.student.registrationNumber}
+              />
             ))}
           </Messages>
           <InputRow>

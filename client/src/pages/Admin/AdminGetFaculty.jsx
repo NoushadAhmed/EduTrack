@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { DataGrid } from '@material-ui/data-grid';
 import styled, { keyframes } from 'styled-components';
 import AdminNavbar from '../../components/AdminNavbar';
+import AdminBackButton from '../../components/AdminBackButton';
 import Loader from '../../components/Loader';
 import { Select, Btn, Card, FormGroup, Label, PageShell, SectionTitle } from '../../components/UI';
 import { adminGetAllFaculty } from '../../redux/actions/adminAction';
@@ -86,6 +87,7 @@ const AdminGetFaculty = () => {
     <PageShell>
       <AdminNavbar />
       <Content>
+        <AdminBackButton />
         <SectionTitle>Search Faculty</SectionTitle>
         <Card style={{ marginBottom: 24 }}>
           <form onSubmit={formHandler}>

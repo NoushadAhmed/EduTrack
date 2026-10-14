@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import StudentNavbar from '../components/StudentNavbar';
+import StudentBackButton from '../components/StudentBackButton';
 import { Avatar, InfoRow, InfoLabel, InfoValue, Btn, PageShell, SectionTitle } from '../components/UI';
 import { getStudentByRegNum } from '../redux/actions/studentAction';
 import { colors, font, radius, shadow, transition } from '../styles/theme';
@@ -92,6 +93,7 @@ const StudentDetails = () => {
     <PageShell>
       <StudentNavbar />
       <Content>
+        <StudentBackButton />
         <SectionTitle>Student Profile</SectionTitle>
         <Grid>
           <ProfileCard>

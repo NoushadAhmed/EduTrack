@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAlert } from 'react-alert';
 import styled, { keyframes } from 'styled-components';
 import StudentNavbar from '../../components/StudentNavbar';
+import StudentBackButton from '../../components/StudentBackButton';
 import { Input, Btn, Card, FormGroup, Label, PageShell, SectionTitle } from '../../components/UI';
 import { studentUpdatePassword, studentLogout } from '../../redux/actions/studentAction';
-import { colors } from '../../styles/theme';
 
 const fadeUp = keyframes`
   from { opacity: 0; transform: translateY(14px); }
@@ -31,24 +31,30 @@ const StudentUpdatePassword = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
-  if (!student.isAuthenticated) { navigate('/'); return null; }
+  if (!student?.isAuthenticated) { navigate('/'); return null; }
 
-  const formHandler = (e) => {
+  const formHandler = async (e) => {
     e.preventDefault();
-    dispatch(studentUpdatePassword({
-      oldPassword,
-      newPassword,
-      confirmNewPassword,
-      registrationNumber: student.student.student.registrationNumber,
-    }));
-    alert.success('Password updated. Please login again.');
-    dispatch(studentLogout());
+
+    try {
+      await dispatch(studentUpdatePassword({
+        oldPassword,
+        newPassword,
+        confirmNewPassword,
+      }));
+      alert.success('Password updated. Please login again.');
+      dispatch(studentLogout());
+      navigate('/');
+    } catch (err) {
+      // Keep the user on the page and surface backend validation errors.
+    }
   };
 
   return (
     <PageShell>
       <StudentNavbar />
       <Content>
+        <StudentBackButton />
         <SectionTitle>Change Password</SectionTitle>
         <Card>
           <form onSubmit={formHandler}>

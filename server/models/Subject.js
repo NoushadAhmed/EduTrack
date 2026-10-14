@@ -23,6 +23,27 @@ const subjectSchema = new Schema({
     type: String,
     required: true,
   },
+  scheme: {
+    type: String,
+    trim: true,
+  },
+  semester: {
+    type: Number,
+    min: 1,
+    max: 8,
+  },
+  academicYear: {
+    type: String,
+    trim: true,
+  },
+  subjectType: {
+    type: String,
+    trim: true,
+  },
+  electiveGroup: {
+    type: String,
+    trim: true,
+  },
   attendance: {
     type: Schema.Types.ObjectId,
     ref: "attendance",

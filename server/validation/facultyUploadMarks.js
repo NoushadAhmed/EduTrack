@@ -2,19 +2,23 @@ const Validator = require("validator");
 const isEmpty = require("./is-empty");
 
 const validateFacultyUploadMarks = (data) => {
-  let errors = {};
-  data.subjectCode = !isEmpty(data.subjectCode) ? data.subjectCode : "";
-  data.exam = !isEmpty(data.exam) ? data.exam : "";
-  data.totalMarks = !isEmpty(data.totalMarks) ? data.totalMarks : "";
+  const errors = {};
+  const subjectCode =
+    typeof data.subjectCode === "string" ? data.subjectCode.trim() : "";
+  const exam = typeof data.exam === "string" ? data.exam.trim() : "";
+  const totalMarks =
+    typeof data.totalMarks === "number" || typeof data.totalMarks === "string"
+      ? String(data.totalMarks).trim()
+      : "";
 
-  if (Validator.isEmpty(data.subjectCode)) {
+  if (Validator.isEmpty(subjectCode)) {
     errors.subjectCode = "Subject Code field is required";
   }
 
-  if (Validator.isEmpty(data.exam)) {
+  if (Validator.isEmpty(exam)) {
     errors.exam = "Exam field is required";
   }
-  if (Validator.isEmpty(data.totalMarks)) {
+  if (Validator.isEmpty(totalMarks)) {
     errors.totalMarks = "Total marks field is required";
   }
 

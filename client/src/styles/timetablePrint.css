@@ -1,0 +1,40 @@
+@page {
+  size: A4 landscape;
+  margin: 9mm;
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  #official-timetable-print,
+  #official-timetable-print * {
+    visibility: visible !important;
+  }
+
+  #official-timetable-print {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    border: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  #official-timetable-print .grid,
+  #official-timetable-print .courses {
+    page-break-inside: auto;
+  }
+
+  #official-timetable-print .grid tr,
+  #official-timetable-print .courses tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+}

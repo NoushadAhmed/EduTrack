@@ -44,6 +44,21 @@ const validateStudentRegisterInput = (data) => {
     errors.section = "Please select a valid section";
   }
 
+  for (const field of ["studentMobileNumber", "fatherMobileNumber"]) {
+    const value = String(data[field] ?? "").trim();
+    if (!/^\d{7,15}$/.test(value)) {
+      errors[field] = "Mobile number must contain 7 to 15 digits";
+    }
+  }
+
+  if (
+    typeof data.fatherName !== "string" ||
+    data.fatherName.trim().length < 2 ||
+    data.fatherName.trim().length > 80
+  ) {
+    errors.fatherName = "Father name must be between 2 and 80 characters";
+  }
+
   return {
     errors,
     isValid: isEmpty(errors),

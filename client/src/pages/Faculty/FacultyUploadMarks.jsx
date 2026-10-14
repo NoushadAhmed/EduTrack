@@ -1,202 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { useAlert } from 'react-alert';
-import { DataGrid } from '@material-ui/data-grid';
-import styled, { keyframes } from 'styled-components';
+import React, { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
+import { useSelector } from 'react-redux';
+import { Navigate } from 'react-router-dom';
+import styled from 'styled-components';
 import FacultyNavbar from '../../components/FacultyNavbar';
-import { Input, Select, Btn, Card, FormGroup, Label, PageShell, SectionTitle } from '../../components/UI';
-import { fetchStudents, uploadMarks } from '../../redux/actions/facultyAction';
-import { ADMIN_DEPARTMENTS, ADMIN_SEMESTERS, ADMIN_SECTIONS, semesterToYear } from '../../config/adminOptions';
+import FacultyBackButton from '../../components/FacultyBackButton';
+import { Card, PageShell, SectionTitle } from '../../components/UI';
 import { colors, font, radius } from '../../styles/theme';
 
-const fadeUp = keyframes`
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
-`;
+const Content = styled.main`max-width: 1120px; margin: 0 auto; padding: 38px 24px; @media(max-width:600px){padding:24px 16px;}`;
+const Panel = styled(Card)`margin: 18px 0;`;
+const Controls = styled.div`display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; align-items:end;`;
+const Field = styled.label`display:grid; gap:6px; color:${colors.textSecondary}; font-size:12px; font-weight:600; select,input{height:42px; padding:0 11px; border:1px solid ${colors.border}; border-radius:${radius.md}; background:white; color:${colors.textPrimary}; font:14px ${font.family};}`;
+const ButtonRow = styled.div`display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; button{border:0; border-radius:${radius.md}; padding:11px 16px; background:${colors.primary}; color:white; font-weight:600; cursor:pointer;} button.secondary{background:#eef2ff;color:${colors.primary};} button:disabled{opacity:.55;cursor:wait;}`;
+const Notice = styled.div`margin:14px 0; padding:13px 15px; border-radius:${radius.md}; background:${({$error})=>$error?'#fff1f0':'#ecfdf3'}; color:${({$error})=>$error?'#b42318':'#067647'}; font-size:13px;`;
+const TableWrap = styled.div`overflow:auto; border:1px solid ${colors.border}; border-radius:${radius.md}; table{width:100%;min-width:660px;border-collapse:collapse;} th,td{text-align:left;padding:12px 14px;border-bottom:1px solid ${colors.border};font-size:13px;} th{background:#f8fafc;color:${colors.textSecondary};font-size:11px;text-transform:uppercase;} input[type=number]{width:100px;height:36px;padding:0 8px;border:1px solid ${colors.border};border-radius:8px;} tr:last-child td{border-bottom:0;}`;
+const SubTitle = styled.h2`font-size:16px;color:${colors.textPrimary};margin:0 0 14px;`;
+const Info = styled.div`display:flex;flex-wrap:wrap;gap:10px 22px;padding:12px 0;color:${colors.textSecondary};font-size:13px;strong{color:${colors.textPrimary};}`;
+const assessmentOptions = [{key:'CIE1',label:'CIE 1'},{key:'CIE2',label:'CIE 2'},{key:'CIE3',label:'CIE 3'},{key:'SEE',label:'SEE'}];
 
-const Content = styled.div`
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 40px 24px;
-  animation: ${fadeUp} 0.3s ease both;
-  @media (max-width: 600px) { padding: 24px 16px; }
-`;
+export default function FacultyUploadMarks() {
+  const isAuthenticated = Boolean(useSelector((state) => state.faculty?.isAuthenticated));
+  const [assignments,setAssignments]=useState([]); const [assignmentId,setAssignmentId]=useState('');
+  const [assessmentType,setAssessmentType]=useState('CIE1'); const [students,setStudents]=useState([]); const [marks,setMarks]=useState({});
+  const [history,setHistory]=useState([]); const [preview,setPreview]=useState([]); const [loading,setLoading]=useState(false); const [saving,setSaving]=useState(false); const [error,setError]=useState(''); const [success,setSuccess]=useState('');
+  const assignment=useMemo(()=>assignments.find((item)=>String(item._id)===assignmentId),[assignments,assignmentId]);
 
-const FilterRow = styled.div`
-  display: flex;
-  gap: 14px;
-  align-items: flex-end;
-  flex-wrap: wrap;
-`;
-
-const FilterField = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 140px;
-  flex: 1;
-`;
-
-const GridWrap = styled.div`
-  background: ${colors.white};
-  border: 1px solid ${colors.border};
-  border-radius: ${radius.lg};
-  overflow: hidden;
-  margin-top: 24px;
-`;
-
-const SecondRow = styled.div`
-  display: flex;
-  gap: 14px;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid ${colors.border};
-`;
-
-const FacultyUploadMarks = () => {
-  const alert = useAlert();
-  const store = useSelector((s) => s);
-  const faculty = useSelector((s) => s.faculty);
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-
-  const [department, setDepartment] = useState('');
-  const [semester, setSemester] = useState('1');
-  const [section, setSection] = useState('');
-  const [exam, setExam] = useState('');
-  const [subjectCode, setSubjectCode] = useState('');
-  const [totalMarks, setTotalMarks] = useState('');
-  const [marks, setMarks] = useState([]);
-  const [isFetchingStudents, setIsFetchingStudents] = useState(true);
-
-  if (!faculty.isAuthenticated) { navigate('/'); return null; }
-
-  const handleInputChange = (value, _id) => {
-    const newMarks = [...marks];
-    const index = newMarks.findIndex((m) => m._id === _id);
-    if (index === -1) newMarks.push({ _id, value });
-    else newMarks[index].value = value;
-    setMarks(newMarks);
-  };
-
-  const columns = [
-    { field: 'id', headerName: 'No.', flex: 0.2 },
-    { field: 'code', headerName: 'Reg. Number', flex: 0.5 },
-    { field: 'name', headerName: 'Name', flex: 0.6 },
-    {
-      field: 'marks', headerName: 'Marks', flex: 0.4, sortable: false,
-      renderCell: (params) => (
-        <input
-          type="number"
-          placeholder="Enter marks"
-          onChange={(e) => handleInputChange(e.target.value, params.getValue(params.id, 'id'))}
-          style={{
-            width: '100%', border: 'none', outline: 'none',
-            fontFamily: 'Inter, sans-serif', fontSize: 13,
-          }}
-        />
-      ),
-    },
-  ];
-
-  const rows = faculty.fetchedStudents.map((item) => ({
-    id: item._id,
-    code: item.registrationNumber,
-    name: item.name,
-  }));
-
-  const formHandler = (e) => {
-    e.preventDefault();
-    dispatch(fetchStudents(department, semesterToYear(semester), section));
-    setIsFetchingStudents(false);
-  };
-
-  const secondFormHandler = (e) => {
-    e.preventDefault();
-    dispatch(uploadMarks(subjectCode, exam, totalMarks, marks, department, semesterToYear(semester), section));
-    alert.success('Marks uploaded successfully');
-  };
-
-  return (
-    <PageShell>
-      <FacultyNavbar />
-      <Content>
-        <SectionTitle>Upload Marks</SectionTitle>
-        <Card>
-          {isFetchingStudents ? (
-            <>
-              <FilterRow>
-                <FilterField>
-                  <Label>Department</Label>
-                  <Select value={department} onChange={(e) => setDepartment(e.target.value)} required>
-                    <option value="">Select department</option>
-                    {ADMIN_DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
-                  </Select>
-                </FilterField>
-                <FilterField>
-                  <Label>Semester</Label>
-                  <Select value={semester} onChange={(e) => setSemester(e.target.value)} required>
-                    {ADMIN_SEMESTERS.map((s) => <option key={s} value={s}>Semester {s}</option>)}
-                  </Select>
-                </FilterField>
-                <FilterField>
-                  <Label>Section</Label>
-                  <Select value={section} onChange={(e) => setSection(e.target.value)} required>
-                    <option value="">Select section</option>
-                    {ADMIN_SECTIONS.map((s) => <option key={s} value={s}>Section {s}</option>)}
-                  </Select>
-                </FilterField>
-                <FilterField>
-                  <Label>Exam</Label>
-                  <Select value={exam} onChange={(e) => setExam(e.target.value)} required>
-                    <option value="">Select exam</option>
-                    <option value="Unit Test 1">Unit Test 1</option>
-                    <option value="Unit Test 2">Unit Test 2</option>
-                    <option value="Semester">Semester</option>
-                  </Select>
-                </FilterField>
-              </FilterRow>
-              <div style={{ marginTop: 16 }}>
-                <Btn onClick={formHandler}>Search Students</Btn>
-              </div>
-            </>
-          ) : (
-            <SecondRow>
-              <FilterField>
-                <Label>Subject</Label>
-                <Select value={subjectCode} onChange={(e) => setSubjectCode(e.target.value)} required>
-                  <option value="">Select subject</option>
-                  {faculty.allSubjectCodeList.map((code) => (
-                    <option key={code} value={code}>{code}</option>
-                  ))}
-                </Select>
-              </FilterField>
-              <FilterField>
-                <Label>Total Marks</Label>
-                <Input
-                  type="number"
-                  placeholder="e.g. 30"
-                  value={totalMarks}
-                  onChange={(e) => setTotalMarks(e.target.value)}
-                  required
-                />
-              </FilterField>
-              <Btn onClick={secondFormHandler} style={{ alignSelf: 'flex-end', height: 44 }}>
-                Submit Marks
-              </Btn>
-            </SecondRow>
-          )}
-        </Card>
-
-        <GridWrap>
-          <DataGrid rows={rows} columns={columns} pageSize={10} autoHeight />
-        </GridWrap>
-      </Content>
-    </PageShell>
-  );
-};
-
-export default FacultyUploadMarks;
+  useEffect(()=>{if(!isAuthenticated)return undefined;let active=true;axios.get('/api/faculty/assignedSubjects').then(({data})=>{if(!active)return;const list=Array.isArray(data?.result)?data.result:[];setAssignments(list);if(list.length===1)setAssignmentId(String(list[0]._id));}).catch((e)=>active&&setError(e.response?.data?.message||'Unable to load assigned subjects.')).finally(()=>active&&setLoading(false));return()=>{active=false;};},[isAuthenticated]);
+  useEffect(()=>{if(!isAuthenticated||!assignmentId){setStudents([]);return undefined;}let active=true;setLoading(true);setError('');setSuccess('');axios.get(`/api/faculty/marks/${encodeURIComponent(assignmentId)}`,{params:{assessmentType}}).then(({data})=>{if(!active)return;const rows=data.result||[];setStudents(rows);setMarks(Object.fromEntries(rows.map((row)=>[row._id,{value:row.marksObtained===null?'':String(row.marksObtained),absent:row.resultStatus==='AB',status:row.status}])));}).catch((e)=>{if(!active)return;const status=e.response?.status;const message=e.response?.data?.message||e.message;setError(status===401?'Your faculty session has expired. Please sign in again.':status===403?`Access denied: ${message}`:status===404?`Assigned subject not found: ${message}`:status?`Unable to load students and marks (${status}): ${message}`:`Network/server error: ${message}`);}).finally(()=>active&&setLoading(false));return()=>{active=false;};},[isAuthenticated,assignmentId,assessmentType]);
+  useEffect(()=>{if(!isAuthenticated)return undefined;let active=true;axios.get('/api/faculty/marks/history',assignmentId?{params:{assignmentId}}:{}).then(({data})=>active&&setHistory(data.result||[])).catch(()=>active&&setHistory([]));return()=>{active=false;};},[isAuthenticated,assignmentId,success]);
+  if(!isAuthenticated)return <Navigate to="/" replace/>;
+  const change=(studentId,patch)=>setMarks((current)=>({...current,[studentId]:{...current[studentId],...patch}}));
+  const payload=()=>students.map((student)=>({studentId:student._id,marksObtained:marks[student._id]?.absent?'':marks[student._id]?.value??'',...(marks[student._id]?.absent?{resultStatus:'AB'}:{})}));
+  const persist=async(kind)=>{if(!assignmentId||!students.length)return;setError('');setSuccess('');const entries=payload();const invalid=entries.find((entry)=>entry.resultStatus!=='AB'&&entry.marksObtained!==''&&(!Number.isFinite(Number(entry.marksObtained))||Number(entry.marksObtained)<0||Number(entry.marksObtained)>50));if(invalid){setError('Marks must be between 0 and 50.');return;}if(kind==='submit'&&entries.some((entry)=>entry.marksObtained===''&&entry.resultStatus!=='AB')){setError('Enter marks for every student before submitting.');return;}if(kind==='submit'&&!window.confirm(`Submit marks for ${assignment?.subjectCode} - Semester ${assignment?.semester} - Section ${assignment?.section||'A'}?`))return;setSaving(true);try{const {data}=await axios.post(`/api/faculty/marks/${kind}`,{assignmentId,assessmentType,marks:entries});const refreshed=await axios.get(`/api/faculty/marks/${encodeURIComponent(assignmentId)}`,{params:{assessmentType}});const rows=refreshed.data.result||[];setStudents(rows);setMarks(Object.fromEntries(rows.map((row)=>[row._id,{value:row.marksObtained===null?'':String(row.marksObtained),absent:row.resultStatus==='AB',status:row.status}])));setSuccess(data.message||'Marks saved successfully.');}catch(e){setError(e.response?.data?.message||e.message||'Unable to save marks.');}finally{setSaving(false);}};
+  const loadPreview=async()=>{setError('');try{const {data}=await axios.get(`/api/faculty/marks/${encodeURIComponent(assignmentId)}/results`);setPreview(data.result||[]);}catch(e){setError(e.response?.data?.message||'Unable to load result preview.');}};
+  return <PageShell><FacultyNavbar/><Content><FacultyBackButton/><SectionTitle>Faculty Marks Entry</SectionTitle>
+    <Panel><Controls><Field>Assigned Subject<select value={assignmentId} onChange={(e)=>{setAssignmentId(e.target.value);setPreview([]);}}><option value="">{assignments.length?'Select assigned subject':'No subjects assigned to you.'}</option>{assignments.map((item)=><option key={item._id} value={item._id}>{item.subjectCode} — {item.subjectName}</option>)}</select></Field><Field>Assessment<select value={assessmentType} onChange={(e)=>setAssessmentType(e.target.value)}>{assessmentOptions.map((item)=><option key={item.key} value={item.key}>{item.label}</option>)}</select></Field></Controls>
+    {assignment&&<Info><span>Department: <strong>{assignment.department}</strong></span><span>Semester: <strong>{assignment.semester}</strong></span><span>Section: <strong>{assignment.section||'A'}</strong></span><span>Maximum: <strong>50</strong></span><span>Academic year: <strong>{assignment.academicYear||'2026-27'}</strong></span></Info>}
+    {error&&<Notice $error>{error}</Notice>}{success&&<Notice>{success}</Notice>}{loading&&<p>Loading assigned students and saved marks…</p>}
+    {assignment&&!loading&&!error&&students.length===0&&<p>No students found for this subject, semester and section.</p>}
+    {students.length>0&&<><TableWrap><table><thead><tr><th>No.</th><th>USN</th><th>Student</th><th>Marks / 50</th><th>Status</th></tr></thead><tbody>{students.map((student,index)=>{const entry=marks[student._id]||{};const invalid=entry.value!==''&&entry.value!==undefined&&(!Number.isFinite(Number(entry.value))||Number(entry.value)<0||Number(entry.value)>50);return <tr key={student._id}><td>{index+1}</td><td>{student.registrationNumber}</td><td>{student.name}</td><td>{assessmentType==='SEE'&&<label><input type="checkbox" checked={Boolean(entry.absent)} onChange={(e)=>change(student._id,{absent:e.target.checked,value:''})}/> AB </label>}<input type="number" min="0" max="50" step="0.5" value={entry.absent?'':entry.value??''} disabled={entry.absent||entry.status==='PUBLISHED'} aria-label={`Marks for ${student.registrationNumber}`} onChange={(e)=>change(student._id,{value:e.target.value})}/></td><td style={{color:invalid?'#b42318':colors.textSecondary}}>{invalid?'Invalid: use 0–50':entry.status||'Not entered'}</td></tr>;})}</tbody></table></TableWrap><ButtonRow><button className="secondary" disabled={saving} onClick={()=>persist('save')}>Save Draft</button><button disabled={saving} onClick={()=>persist('submit')}>Submit Marks</button><button className="secondary" onClick={loadPreview}>Preview Results</button></ButtonRow></>}
+    </Panel>
+    {preview.length>0&&<Panel><SubTitle>Result Preview (not published)</SubTitle><TableWrap><table><thead><tr><th>USN</th><th>Student</th><th>CIE</th><th>SEE</th><th>Total</th><th>Grade</th><th>Result</th></tr></thead><tbody>{preview.map((row)=><tr key={row._id}><td>{row.registrationNumber}</td><td>{row.name}</td><td>{row.cie??'—'}</td><td>{row.see??row.resultStatus}</td><td>{row.total??'—'}</td><td>{row.grade}</td><td>{row.resultStatus}</td></tr>)}</tbody></table></TableWrap></Panel>}
+    <Panel><SubTitle>Marks History</SubTitle>{history.length===0?<p>No marks entered yet.</p>:<TableWrap><table><thead><tr><th>Subject</th><th>Assessment</th><th>Semester</th><th>Section</th><th>Academic Year</th><th>Students</th><th>Status</th><th>Updated</th></tr></thead><tbody>{history.map((row)=><tr key={row._id}><td>{row.subject?.subjectCode||row.subjectCode||'—'}</td><td>{row.exam||row.assessmentType}</td><td>{row.semester??'—'}</td><td>{row.section||'—'}</td><td>{row.academicYear||'—'}</td><td>{row.studentCount??'—'}</td><td>{row.status}</td><td>{new Date(row.updatedAt||row.createdAt).toLocaleString()}</td></tr>)}</tbody></table></TableWrap>}</Panel>
+  </Content></PageShell>;
+}

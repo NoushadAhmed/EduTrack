@@ -47,8 +47,32 @@ const facultySchema = new Schema({
       type: String,
     },
   ],
+  assignedSubjects: [
+    {
+      faculty: {
+        type: Schema.Types.ObjectId,
+        ref: "faculty",
+      },
+      subject: {
+        type: Schema.Types.ObjectId,
+        ref: "subject",
+        required: true,
+      },
+      subjectCode: { type: String, required: true },
+      subjectName: { type: String, required: true },
+      subjectType: { type: String, default: "" },
+      department: { type: String },
+      semester: { type: Number, min: 1, max: 8, required: true },
+      year: { type: Number, min: 1, max: 4 },
+      section: { type: String },
+      academicYear: { type: String, required: true },
+    },
+  ],
   otp: {
     type: String,
+  },
+  otpExpiresAt: {
+    type: Date,
   },
 });
 

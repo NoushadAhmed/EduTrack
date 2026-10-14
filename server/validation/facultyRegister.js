@@ -35,6 +35,10 @@ const validateFacultyRegisterInput = (data) => {
     errors.designation = "Designation field is required";
   }
 
+  if (!/^\d{7,15}$/.test(String(data.facultyMobileNumber ?? "").trim())) {
+    errors.facultyMobileNumber = "Mobile number must contain 7 to 15 digits";
+  }
+
   return {
     errors,
     isValid: isEmpty(errors),

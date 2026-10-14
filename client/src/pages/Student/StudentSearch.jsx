@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { DataGrid } from '@material-ui/data-grid';
-import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import styled, { keyframes } from 'styled-components';
-import { Explore } from '@material-ui/icons';
 import StudentNavbar from '../../components/StudentNavbar';
-import { Select, Btn, Card, FormGroup, Label, PageShell, SectionTitle } from '../../components/UI';
+import StudentBackButton from '../../components/StudentBackButton';
+import { Select, Btn, Card, Label, PageShell, SectionTitle } from '../../components/UI';
 import { colors, radius } from '../../styles/theme';
 import { ADMIN_DEPARTMENTS, ADMIN_YEARS, ADMIN_SECTIONS } from '../../config/adminOptions';
 
@@ -47,11 +46,11 @@ const GridWrap = styled.div`
 
 const StudentSearch = () => {
   const student = useSelector((s) => s.student);
-  const navigate = useNavigate();
+  const studentData = student.student?.student || {};
 
-  const [department, setDepartment] = useState('');
-  const [year, setYear] = useState('');
-  const [section, setSection] = useState('');
+  const [department, setDepartment] = useState(studentData.department || '');
+  const [year, setYear] = useState(String(studentData.year || ''));
+  const [section, setSection] = useState(studentData.section || '');
   const [result, setResult] = useState([]);
 
   const fetchStudents = async () => {
@@ -67,23 +66,13 @@ const StudentSearch = () => {
     { field: 'num', headerName: 'No.', flex: 0.2 },
     { field: 'id', headerName: 'Reg. Number', flex: 0.5 },
     { field: 'name', headerName: 'Name', flex: 0.5 },
-    { field: 'email', headerName: 'Email', flex: 0.5 },
     { field: 'section', headerName: 'Section', flex: 0.3 },
-    {
-      field: 'visit', headerName: 'Profile', flex: 0.2, sortable: false,
-      renderCell: (params) => (
-        <Link to={`/profile/${params.getValue(params.id, 'id')}`}>
-          <Explore style={{ color: colors.primary }} />
-        </Link>
-      ),
-    },
   ];
 
   const rows = (result || []).map((item, index) => ({
     num: index + 1,
     id: item.registrationNumber,
     name: item.name,
-    email: item.email,
     section: item.section,
   }));
 
@@ -91,6 +80,7 @@ const StudentSearch = () => {
     <PageShell>
       <StudentNavbar />
       <Content>
+        <StudentBackButton />
         <SectionTitle>Search Students</SectionTitle>
         <Card style={{ marginBottom: 24 }}>
           <form onSubmit={(e) => { e.preventDefault(); fetchStudents(); }}>

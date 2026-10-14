@@ -4,9 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAlert } from 'react-alert';
 import styled, { keyframes } from 'styled-components';
 import StudentNavbar from '../../components/StudentNavbar';
+import StudentBackButton from '../../components/StudentBackButton';
 import { Input, Btn, Card, FormGroup, Label, PageShell, SectionTitle } from '../../components/UI';
 import { studentUpdate, studentLogout } from '../../redux/actions/studentAction';
-import { colors, font, radius } from '../../styles/theme';
+import { colors, font } from '../../styles/theme';
 
 const fadeUp = keyframes`
   from { opacity: 0; transform: translateY(14px); }
@@ -52,7 +53,7 @@ const StudentUpdateProfile = () => {
   const navigate = useNavigate();
   const alert = useAlert();
 
-  const studentData = student?.student?.student;
+  const studentData = student?.student?.student || student?.student || {};
 
   const [email, setEmail] = useState(studentData?.email || '');
   const [mobile, setMobile] = useState(studentData?.studentMobileNumber || '');
@@ -61,7 +62,10 @@ const StudentUpdateProfile = () => {
   const [avatar, setAvatar] = useState(studentData?.avatar?.url || '');
   const [avatarPreview, setAvatarPreview] = useState(studentData?.avatar?.url || '');
 
-  if (!studentData) { navigate('/'); return null; }
+  if (!student?.isAuthenticated || !studentData || Object.keys(studentData).length === 0) {
+    navigate('/');
+    return null;
+  }
 
   const imageHandler = (e) => {
     const file = e.target.files?.[0];
@@ -71,25 +75,30 @@ const StudentUpdateProfile = () => {
     reader.readAsDataURL(file);
   };
 
-  const fileHandler = (e) => {
+  const fileHandler = async (e) => {
     e.preventDefault();
     const myForm = new FormData();
     myForm.append('studentMobileNumber', mobile);
     myForm.append('email', email);
     myForm.append('fatherName', fatherName);
     myForm.append('fatherMobileNumber', fatherMobile);
-    myForm.append('registrationNumber', studentData.registrationNumber);
-    myForm.append('avatar', avatar);
-    dispatch(studentUpdate(myForm));
-    alert.success('Profile updated. Please login again.');
-    dispatch(studentLogout());
-    navigate('/');
+    myForm.append('avatar', avatar || '');
+
+    try {
+      await dispatch(studentUpdate(myForm));
+      alert.success('Profile updated successfully.');
+      dispatch(studentLogout());
+      navigate('/');
+    } catch (err) {
+      // Keep the user in the form so server validation feedback can be handled by the backend response path.
+    }
   };
 
   return (
     <PageShell>
       <StudentNavbar />
       <Content>
+        <StudentBackButton />
         <SectionTitle>Update Profile</SectionTitle>
         <Card>
           <form encType="multipart/form-data" onSubmit={fileHandler}>

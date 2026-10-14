@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAlert } from 'react-alert';
 import styled, { keyframes } from 'styled-components';
 import FacultyNavbar from '../../components/FacultyNavbar';
+import FacultyBackButton from '../../components/FacultyBackButton';
 import { Input, Btn, Card, FormGroup, Label, PageShell, SectionTitle } from '../../components/UI';
 import { facultyUpdate, facultyLogout } from '../../redux/actions/facultyAction';
 import { colors, font, radius } from '../../styles/theme';
@@ -52,15 +53,15 @@ const FacultyUpdateProfile = () => {
   const dispatch = useDispatch();
   const faculty = useSelector((s) => s.faculty);
 
-  if (!faculty.isAuthenticated) { navigate('/'); return null; }
-
-  const f = faculty.faculty.faculty;
+  const f = faculty?.faculty?.faculty;
   const existingAvatar = f?.avatar?.url || '';
 
   const [email, setEmail] = useState(f?.email || '');
   const [mobile, setMobile] = useState(f?.facultyMobileNumber || '');
   const [avatar, setAvatar] = useState(existingAvatar);
   const [avatarPreview, setAvatarPreview] = useState(existingAvatar);
+
+  if (!faculty.isAuthenticated) { navigate('/'); return null; }
 
   const imageHandler = (e) => {
     const file = e.target.files?.[0];
@@ -87,6 +88,7 @@ const FacultyUpdateProfile = () => {
     <PageShell>
       <FacultyNavbar />
       <Content>
+        <FacultyBackButton />
         <SectionTitle>Update Profile</SectionTitle>
         <Card>
           <form encType="multipart/form-data" onSubmit={fileHandler}>

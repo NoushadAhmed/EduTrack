@@ -4,9 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAlert } from 'react-alert';
 import styled, { keyframes } from 'styled-components';
 import AdminNavbar from '../../components/AdminNavbar';
+import AdminBackButton from '../../components/AdminBackButton';
 import { Input, Select, Btn, Card, FormGroup, Label, PageShell, SectionTitle } from '../../components/UI';
 import { adminAddSubject } from '../../redux/actions/adminAction';
 import { ADMIN_DEPARTMENTS, ADMIN_SEMESTERS, semesterToYear } from '../../config/adminOptions';
+import { colors } from '../../styles/theme';
 
 const fadeUp = keyframes`
   from { opacity: 0; transform: translateY(14px); }
@@ -33,21 +35,43 @@ const AdminAddSubject = () => {
   const [totalLectures, setTotalLectures] = useState('');
   const [department, setDepartment] = useState('');
   const [semester, setSemester] = useState('1');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   if (!admin.isAuthenticated) { navigate('/admin/login'); return null; }
 
-  const formHandler = (e) => {
+  const formHandler = async (e) => {
     e.preventDefault();
     const backendYear = semesterToYear(semester);
-    dispatch(adminAddSubject({ department, year: backendYear, subjectCode, subjectName, totalLectures }));
-    alert.success('Subject added successfully');
-    navigate('/admin/subjects');
+    setIsSubmitting(true);
+    setSubmitError('');
+    try {
+      await dispatch(adminAddSubject({
+        department,
+        year: backendYear,
+        subjectCode,
+        subjectName,
+        totalLectures,
+      }));
+      alert.success('Subject added successfully');
+      navigate('/admin/subjects');
+    } catch (error) {
+      const response = error.response?.data;
+      const message = response?.message
+        || Object.values(response || {}).filter((value) => typeof value === 'string').join(' ')
+        || 'Subject could not be added. Please check the details and try again.';
+      setSubmitError(message);
+      alert.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <PageShell>
       <AdminNavbar />
       <Content>
+        <AdminBackButton />
         <SectionTitle>Add Subject</SectionTitle>
         <Card>
           <form onSubmit={formHandler}>
@@ -81,7 +105,8 @@ const AdminAddSubject = () => {
               </Select>
             </FormGroup>
 
-            <Btn type="submit" $full>Add Subject</Btn>
+            {submitError && <p role="alert" style={{ color: colors.danger, fontSize: 13, margin: '0 0 12px' }}>{submitError}</p>}
+            <Btn type="submit" $full disabled={isSubmitting}>{isSubmitting ? 'Adding subject...' : 'Add Subject'}</Btn>
           </form>
         </Card>
       </Content>

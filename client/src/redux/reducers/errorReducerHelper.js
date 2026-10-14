@@ -12,3 +12,4 @@ const setErrorsHelper = (state = initialState, action) => {
 };
 
 export default setErrorsHelper;
+

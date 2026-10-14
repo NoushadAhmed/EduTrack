@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { Message, Inbox } from '@material-ui/icons';
 import StudentNavbar from '../../components/StudentNavbar';
+import StudentBackButton from '../../components/StudentBackButton';
 import { PageShell, SectionTitle, Btn } from '../../components/UI';
 import { colors, font, radius, shadow, transition } from '../../styles/theme';
 
@@ -84,6 +85,7 @@ const StudentChats = () => {
     <PageShell>
       <StudentNavbar />
       <Content>
+        <StudentBackButton />
         <SectionTitle>Messages</SectionTitle>
 
         {newer.length > 0 && <SectionLabel>New Messages</SectionLabel>}

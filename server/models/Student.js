@@ -64,6 +64,9 @@ const studentSchema = new Schema({
   otp: {
     type: String,
   },
+  otpExpiresAt: {
+    type: Date,
+  },
 });
 
 module.exports =

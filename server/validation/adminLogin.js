@@ -4,12 +4,15 @@ const isEmpty = require("./is-empty");
 const validateAdminLoginInput = (data) => {
   let errors = {};
   data.registrationNumber = !isEmpty(data.registrationNumber)
-    ? data.registrationNumber
+    ? data.registrationNumber.trim().toUpperCase()
     : "";
   data.password = !isEmpty(data.password) ? data.password : "";
 
-  if (!Validator.isLength(data.registrationNumber, { min: 12, max: 12 })) {
-    errors.registrationNumber = "Registration Number must be of 8 characters";
+  if (
+    !Validator.isLength(data.registrationNumber, { min: 10, max: 10 }) ||
+    !/^ADM\d{7}$/.test(data.registrationNumber)
+  ) {
+    errors.registrationNumber = "Registration Number must be ADM followed by 7 digits";
   }
 
   if (Validator.isEmpty(data.registrationNumber)) {
